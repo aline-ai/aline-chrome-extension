@@ -1,0 +1,16 @@
+{
+    // "include": [ "extension/**/*.ts" ],
+    "exclude": [ "node_modules" ],
+    // "extends": "@tsconfig/recommended/tsconfig.json",
+    "compilerOptions": {
+        "strict": true,
+        "module": "commonjs",
+        "target": "es5",
+        "jsx": "react",
+        "typeRoots": [ "node_modules/@types" ],
+        "esModuleInterop": true,
+        "lib": [ "es2015", "dom" ]
+    },
+    "$schema": "https://json.schemastore.org/tsconfig",
+}
+  
