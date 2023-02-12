@@ -1,22 +1,27 @@
 // NOTE: Conventions is based on https://github.com/airbnb/javascript/tree/master/react
 
-import React from "react";
-import ReactDOM from "react-dom";
+import React, { useState } from "react";
+import { createRoot } from "react-dom/client";
 import { ChakraProvider } from "@chakra-ui/react";
 
-import OpenButton from "./components/OpenButton";
-import Sidebar from "./components/Sidebar";
-// import theme from "./theme";
+import Overlay from "./components/Overlay";
+import theme from "./theme";
+import FloatingButton from "./components/FloatingButton";
+import { ChevronDownIcon, ChevronUpIcon } from "@chakra-ui/icons";
 
 const App = () => {
+  const [on, setOn] = useState<boolean>(false);
   return (
-    // <ChakraProvider theme={theme}>
-    <ChakraProvider>
-      {/* <div> */}
-      <OpenButton />
-      <Sidebar />
-      {/* </div> */}
-      //{" "}
+    <ChakraProvider resetCSS={false} theme={theme}>
+      <FloatingButton
+        opacity={0.8}
+        right={10}
+        top={10}
+        onClick={() => setOn(!on)}
+      >
+        {on ? <ChevronUpIcon /> : <ChevronDownIcon />}
+      </FloatingButton>
+      <Overlay on={on} />
     </ChakraProvider>
   );
 };
@@ -29,70 +34,34 @@ const App = () => {
     background-color: white;
 */
 
-// Solution 1:
-const root = document.createElement("div");
-const body = document.querySelector("body");
-document.documentElement.insertBefore(root, body);
-ReactDOM.render(<App />, root);
-
-// Solution 2: Inject an inline block (scrapped)
-const container = document.createElement("div");
+// // Old Solution:
+console.log("Injecting Aline elements...");
 const root = document.createElement("div");
 root.id = "aline-root";
-// const body = document.querySelector("body")!;
-const body = document.getElementsByTagName("body")[0];
-// document.documentElement.insertBefore(container, body);
-document.documentElement.appendChild(container);
+document.documentElement.appendChild(root);
+createRoot(root).render(<App />);
+console.log("Injected Aline elements.");
 
-// container.style.display = "flex";
+// New Solution:
+// console.log("Injecting Aline elements...");
+// // Inject root into an iframe so that it doesn't interfere with the page's CSS
 
-// container.append(root);
-// container.append(body);
+// // Create iframe
+// const iframe = document.createElement("iframe");
+// iframe.id = "aline-iframe";
+// iframe.style.display = "fixed";
+// iframe.style.height = "100vh";
+// iframe.style.width = "100vw";
+// iframe.style.border = "none";
+// iframe.style.zIndex = "9999";
+// document.documentElement.appendChild(iframe);
 
-// console.log("got here");
-// ReactDOM.render(<App />, root);
-// console.log("got here");
-
-// Solution 2b:
-// const root = document.createElement("div");
-// root.id = "aline-root";
-// const body = document.getElementsByTagName("body")[0];
-// body.prepend(root);
-
-// console.log("got here");
-// ReactDOM.render(<App />, root);
-// console.log("got here");
-
-// Solution 3: using DevTools panel (cursed)
-
-// Solution 4: using iframe (broken AND cursed)
-
-// // Dark magic begins... NOW!
-// window.onload = () => {
-//   const html = document.documentElement;
-//   const items = document.querySelectorAll("html > *");
-//   const container = document.createElement("div");
+// iframe.onload = () => {
+//   // Inject root into iframe
 //   const root = document.createElement("div");
-//   const iframe = document.createElement("iframe");
-
-//   container.style.display = "flex";
-//   container.style.width = "100vw";
-//   container.style.height = "100vh";
-//   iframe.style.flexGrow = "1";
-//   iframe.style.border = "none";
-
-//   document.documentElement.appendChild(container);
-//   container.appendChild(root);
-//   container.appendChild(iframe);
-//   iframe.onload = () => {
-//     const iframeDocument = iframe.contentWindow!.document;
-//     const iframeHtml = iframeDocument.createElement("html");
-//     iframeHtml.style.overflowX = "hidden";
-//     iframeDocument.open();
-//     iframeDocument.appendChild(iframeHtml);
-//     items.forEach((item) => iframeHtml.appendChild(item));
-//     iframeDocument.close();
-//   };
-
-//   ReactDOM.render(<App />, root);
+//   root.id = "aline-root";
+//   iframe.contentDocument!.body.appendChild(root);
+//   createRoot(root).render(<App />);
 // };
+
+// console.log("Injected Aline elements.");

@@ -1,6 +1,22 @@
-import { extendTheme } from "@chakra-ui/react";
+import { extendTheme, type ThemeConfig } from "@chakra-ui/react";
+import { NoEmitOnErrorsPlugin } from "webpack";
+
+const config: ThemeConfig = {
+  initialColorMode: "system",
+  useSystemColorMode: true,
+};
 
 export default extendTheme({
+  config,
+  styles: {
+    global: {
+      body: {
+        // Temporary fix for removing global styles
+        color: "ignore",
+        background: "ignore",
+      },
+    },
+  },
   colors: {
     cyan: {
       50: "#E8F6FC",
