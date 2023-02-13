@@ -1,8 +1,8 @@
 {
     "manifest_version": 3,
-    "name": "Rewriter",
+    "name": "Aline",
     "version": "1.0",
-    "description": "Add the reading time to Chrome Extension documentation articles",
+    "description": "Aline your reading with your writing",
     "content_scripts": [
         {
             "js": ["content.js"],

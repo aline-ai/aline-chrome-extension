@@ -1,14 +1,23 @@
 import { Box } from "@chakra-ui/react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import FloatingButton from "./FloatingButton";
-import SidebarToggleButton from "./SidebarToggleButton";
 import { ChevronLeftIcon, ChevronRightIcon } from "@chakra-ui/icons";
+import Sidebar from "./SidebarContent";
 
-export default function Sidebar(props: any) {
+const animationTime = "0.4s";
+const animationType = "ease-in-out";
+
+export default ({ overlayOn }: { overlayOn: boolean }) => {
   const [on, setOn] = useState<boolean>(true);
-  const width = 0.3 * window.innerWidth;
-  const animationTime = "0.4s";
-  const animationType = "ease-in-out";
+  const [width, setWidth] = useState<number>(0.3 * window.innerWidth);
+
+  // let width = 0.3 * window.innerWidth; // make this update on window resize
+  useEffect(() => {
+    const handleResize = () => setWidth(0.3 * window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   return (
     <>
       <Box
@@ -21,7 +30,7 @@ export default function Sidebar(props: any) {
         transition={`left ${animationTime} ${animationType}`}
         position="fixed"
       >
-        This is the sidebar
+        <Sidebar />
       </Box>
       <Box
         height="100vh"
@@ -30,7 +39,7 @@ export default function Sidebar(props: any) {
       />{" "}
       {/* This is for spacing */}
       <FloatingButton
-        top={props.on ? 10 : "-90vh"}
+        top={overlayOn ? 10 : "-90vh"}
         left={on ? width + 50 : 50}
         transition={`left ${animationTime} ${animationType}, top 0.6s ${animationType}`}
         onClick={() => {
@@ -39,15 +48,6 @@ export default function Sidebar(props: any) {
       >
         {on ? <ChevronLeftIcon /> : <ChevronRightIcon />}
       </FloatingButton>
-      {/* <SidebarToggleButton
-        on={on}
-        top={props.on ? 10 : "-90vh"}
-        left={on ? width + 30 : 30}
-        transition={`left ${animationTime} ${animationType}, top 0.6s ${animationType}`}
-        onClick={() => {
-          setOn(!on);
-        }}
-      /> */}
     </>
   );
-}
+};

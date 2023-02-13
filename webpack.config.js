@@ -3,32 +3,33 @@
 //   ./src/background.ts -> ./extension/background.js
 //   ./src/manifest.json ->  ./extension/manifest.json
 
+const path = require("path");
+const CopyWebpackPlugin = require("copy-webpack-plugin");
 
-const path = require('path');
-const CopyWebpackPlugin = require('copy-webpack-plugin');
 // const ExtReloader  = require('webpack-ext-reloader');
 
 module.exports = {
+  watch: true,
   devtool: false,
   entry: {
-    content: './src/content.tsx',
-    background: './src/background.ts',
+    content: "./src/content.tsx",
+    background: "./src/background.ts",
   },
   output: {
-    path: path.resolve(__dirname, 'extension'),
-    filename: '[name].js'
+    path: path.resolve(__dirname, "extension"),
+    filename: "[name].js",
   },
   resolve: {
-    extensions: ['.tsx', '.ts', '.js']
+    extensions: [".tsx", ".ts", ".js"],
   },
   module: {
     rules: [
       {
         test: /\.tsx?$/,
-        use: 'ts-loader',
-        exclude: /node_modules/
-      }
-    ]
+        use: "ts-loader",
+        exclude: /node_modules/,
+      },
+    ],
   },
   plugins: [
     // new ExtReloader({
@@ -39,8 +40,8 @@ module.exports = {
     //   }
     // }),
     new CopyWebpackPlugin({
-      patterns:[{ from: './src/manifest.json' }]
-    })
+      patterns: [{ from: "./src/manifest.json" }],
+    }),
   ],
-  watch: true
+  watch: true,
 };

@@ -1,20 +1,18 @@
-import {
-  Box,
-  Heading,
-  Skeleton,
-  SkeletonText,
-  Stack,
-  Text,
-} from "@chakra-ui/react";
-import React from "react";
+import { Box, Skeleton, SkeletonText, Stack } from "@chakra-ui/react";
+import React, { useEffect } from "react";
 
 import Sidebar from "./Sidebar";
 
-interface ReaderModeProps {
-  on: boolean;
-}
-
-export default function ReaderMode(props: ReaderModeProps) {
+const defaultBoxShadow = "0 5px 10px grey";
+export default ({ overlayOn }: { overlayOn: boolean }) => {
+  const [boxShadow, setBoxShadow] = React.useState<string>(defaultBoxShadow);
+  useEffect(() => {
+    if (overlayOn) {
+      setBoxShadow(defaultBoxShadow);
+    } else {
+      setTimeout(() => setBoxShadow("none"), 600);
+    }
+  }, [overlayOn]);
   return (
     <Box
       position="fixed"
@@ -22,12 +20,14 @@ export default function ReaderMode(props: ReaderModeProps) {
       height="100vh"
       width="100vw"
       zIndex="9999"
-      top={props.on ? 0 : "-100vh"}
+      top={overlayOn ? 0 : "-100vh"}
       left={0}
       background="white"
+      boxShadow={boxShadow}
       transition="top 0.6s ease-in-out"
+      fontFamily={"body"}
     >
-      <Sidebar on={props.on} />
+      <Sidebar overlayOn={overlayOn} />
       <Box flexGrow={1} padding={20}>
         <Stack maxWidth={600} marginX="auto">
           <Skeleton height="20px" width="200px" />
@@ -41,4 +41,4 @@ export default function ReaderMode(props: ReaderModeProps) {
       </Box>
     </Box>
   );
-}
+};

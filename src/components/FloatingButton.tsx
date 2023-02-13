@@ -1,7 +1,7 @@
 import React from "react";
-import { Button } from "@chakra-ui/react";
+import { Button, ButtonProps } from "@chakra-ui/react";
 
-export default function FloatingButton(props: any) {
+export default (props: ButtonProps) => {
   return (
     <Button
       position="fixed"
@@ -19,4 +19,4 @@ export default function FloatingButton(props: any) {
       {props.children}
     </Button>
   );
-}
+};

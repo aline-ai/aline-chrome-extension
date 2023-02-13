@@ -1,40 +1,11 @@
 // NOTE: Conventions is based on https://github.com/airbnb/javascript/tree/master/react
 
-import React, { useState } from "react";
+import React from "react";
 import { createRoot } from "react-dom/client";
-import { ChakraProvider } from "@chakra-ui/react";
-
-import Overlay from "./components/Overlay";
-import theme from "./theme";
-import FloatingButton from "./components/FloatingButton";
-import { ChevronDownIcon, ChevronUpIcon } from "@chakra-ui/icons";
-
-const App = () => {
-  const [on, setOn] = useState<boolean>(false);
-  return (
-    <ChakraProvider resetCSS={false} theme={theme}>
-      <FloatingButton
-        opacity={0.8}
-        right={10}
-        top={10}
-        onClick={() => setOn(!on)}
-      >
-        {on ? <ChevronUpIcon /> : <ChevronDownIcon />}
-      </FloatingButton>
-      <Overlay on={on} />
-    </ChakraProvider>
-  );
-};
-
-/*
-    height: 100vh;
-    width: 28.4vw;
-    border: 1px solid black;
-    z-index: 9999;
-    background-color: white;
-*/
+import App from "./App";
 
 // // Old Solution:
+// TODO: check if window is large enough
 console.log("Injecting Aline elements...");
 const root = document.createElement("div");
 root.id = "aline-root";

@@ -1,16 +1,16 @@
 {
-  "manifest_version": 3,
-  "name": "Aline",
-  "version": "1.0",
-  "description": "Add the reading time to Chrome Extension documentation articles",
-  "content_scripts": [
-    {
-      "js": ["content.js"],
-      "matches": ["<all_urls>"]
-    }
-  ],
-  "background": {
-    "service_worker": "background.js"
-  },
-  "host_permissions": ["https://rewriter-api.herokuapp.com/*"]
+    "manifest_version": 3,
+    "name": "Aline",
+    "version": "1.0",
+    "description": "Aline your reading with your writing",
+    "content_scripts": [
+        {
+            "js": ["content.js"],
+            "matches": ["<all_urls>"]
+        }
+    ],
+    "background": {
+        "service_worker": "background.js"
+    },
+    "host_permissions": ["https://rewriter-api.herokuapp.com/*"]
 }

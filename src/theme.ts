@@ -6,17 +6,19 @@ const config: ThemeConfig = {
   useSystemColorMode: true,
 };
 
-export default extendTheme({
+let theme = extendTheme({
   config,
-  styles: {
-    global: {
-      body: {
-        // Temporary fix for removing global styles
-        color: "ignore",
-        background: "ignore",
-      },
-    },
-  },
+  // styles: {
+  //   global: {
+  //     body: {
+  //       // Temporary fix for removing global styles
+  //       fontFamily: "unset",
+  //       color: "ignore",
+  //       background: "ignore",
+  //       lineHeight: "ignore",
+  //     },
+  //   },
+  // },
   colors: {
     cyan: {
       50: "#E8F6FC",
@@ -31,4 +33,12 @@ export default extendTheme({
       900: "#06212D",
     },
   },
+  fonts: {
+    body: `'Literata', 'serif'`,
+    heading: `'Literata', 'serif'`,
+  },
 });
+
+theme.styles.global = {};
+
+export default theme;
