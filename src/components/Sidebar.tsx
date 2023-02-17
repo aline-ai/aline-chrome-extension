@@ -2,7 +2,7 @@ import { Box } from "@chakra-ui/react";
 import React, { useEffect, useState } from "react";
 import FloatingButton from "./FloatingButton";
 import { ChevronLeftIcon, ChevronRightIcon } from "@chakra-ui/icons";
-import Sidebar from "./SidebarContent";
+import SidebarContent from "./SidebarContent";
 
 const animationTime = "0.4s";
 const animationType = "ease-in-out";
@@ -30,7 +30,7 @@ export default ({ overlayOn }: { overlayOn: boolean }) => {
         transition={`left ${animationTime} ${animationType}`}
         position="fixed"
       >
-        <Sidebar />
+        <SidebarContent />
       </Box>
       <Box
         height="100vh"

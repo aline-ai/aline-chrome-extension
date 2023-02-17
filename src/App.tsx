@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { RecoilRoot } from "recoil";
 
 import { ChakraProvider } from "@chakra-ui/react";
 import { ChevronDownIcon, ChevronUpIcon } from "@chakra-ui/icons";
@@ -12,15 +13,17 @@ export default () => {
   const [overlayOn, setOverlayOn] = useState<boolean>(true);
   return (
     <ChakraProvider resetCSS={false} theme={theme}>
-      <FloatingButton
-        opacity={0.8}
-        right={10}
-        top={10}
-        onClick={() => setOverlayOn(!overlayOn)}
-      >
-        {overlayOn ? <ChevronUpIcon /> : <ChevronDownIcon />}
-      </FloatingButton>
-      <Overlay overlayOn={overlayOn} />
+      <RecoilRoot>
+        <FloatingButton
+          opacity={0.8}
+          right={10}
+          top={10}
+          onClick={() => setOverlayOn(!overlayOn)}
+        >
+          {overlayOn ? <ChevronUpIcon /> : <ChevronDownIcon />}
+        </FloatingButton>
+        <Overlay overlayOn={overlayOn} />
+      </RecoilRoot>
     </ChakraProvider>
   );
 };
