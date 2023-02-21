@@ -1,17 +1,21 @@
 import React, { useMemo, useState } from "react";
 import { RecoilRoot } from "recoil";
-import root from "react-shadow/emotion";
 
+import root from "react-shadow/emotion";
+import { ThemeProvider } from "@emotion/react";
 import { CSSVars, toCSSVar } from "@chakra-ui/react";
 import { ChevronDownIcon, ChevronUpIcon } from "@chakra-ui/icons";
 
 import Overlay from "./components/Overlay";
-import theme from "./theme";
 import FloatingButton from "./components/FloatingButton";
-import { ThemeProvider } from "@emotion/react";
+import theme from "./theme";
 
-// TODO: configure a shadow dom to prevent css conflicts
 export default () => {
+  // This uses Shadow DOM to isolate the Chakra UI theme from the rest of the page.
+  // Basically, ChakraProvider boils down mainly to Chakra's ThemeProvider
+  // and Chakra's ThemeProvider boils down mainly to Emotion's ThemeProvider and CSSVars.
+  // react-shadow doesn't immediately support ChakraProvider, but it does support
+  // Emotion's ThemeProvider.
   const [overlayOn, setOverlayOn] = useState<boolean>(false);
   const computedTheme = useMemo(() => toCSSVar(theme), [theme]);
   return (

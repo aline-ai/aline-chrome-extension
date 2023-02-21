@@ -8,17 +8,6 @@ const config: ThemeConfig = {
 
 let theme = extendTheme({
   config,
-  // styles: {
-  //   global: {
-  //     body: {
-  //       // Temporary fix for removing global styles
-  //       fontFamily: "unset",
-  //       color: "ignore",
-  //       background: "ignore",
-  //       lineHeight: "ignore",
-  //     },
-  //   },
-  // },
   colors: {
     cyan: {
       50: "#E8F6FC",
@@ -38,7 +27,5 @@ let theme = extendTheme({
     heading: `'Literata', 'serif'`,
   },
 });
-
-theme.styles.global = {};
 
 export default theme;
