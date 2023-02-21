@@ -153,17 +153,23 @@
         ) {
           var _this = this;
           if (request.message === "fetch") {
+            // console.log("Sending data: ", request.url, request.options);
             (function () {
               return __awaiter(_this, void 0, void 0, function () {
                 var response, _a;
                 return __generator(this, function (_b) {
                   switch (_b.label) {
                     case 0:
+                      console.log(
+                        "Sending data: ",
+                        request.url,
+                        request.options
+                      );
                       return [4 /*yield*/, fetch(request.url, request.options)];
                     case 1:
                       response = _b.sent();
                       _a = sendResponse;
-                      return [4 /*yield*/, response.text()];
+                      return [4 /*yield*/, response.json()];
                     case 2:
                       _a.apply(void 0, [_b.sent()]);
                       return [2 /*return*/];

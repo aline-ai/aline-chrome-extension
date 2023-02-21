@@ -14,35 +14,13 @@ import Sidebar from "./Sidebar";
 // import { extractFromHtml } from "@extractus/article-extractor";
 
 import { compile, HtmlToTextOptions } from "html-to-text";
-
-const options: HtmlToTextOptions = {
-  wordwrap: false,
-  preserveNewlines: true,
-  decodeEntities: false,
-  selectors: [
-    { selector: "a", format: "blockTag" },
-    { selector: "p", format: "blockTag" },
-    { selector: "h1", format: "blockTag" },
-    { selector: "h2", format: "blockTag" },
-    { selector: "h3", format: "blockTag" },
-    { selector: "ul", format: "blockTag" },
-    { selector: "li", format: "blockTag" },
-    { selector: "b", format: "blockTag" },
-    { selector: "em", format: "blockTag" },
-    { selector: "i", format: "blockTag" },
-    { selector: "u", format: "blockTag" },
-    { selector: "del", format: "blockTag" },
-    { selector: "s", format: "blockTag" },
-    { selector: "blockquote", format: "blockTag" },
-    { selector: "hr", format: "blockTag" },
-  ],
-};
-const compiledConvert = compile(options); // options passed here
+import { mainTextState } from "../states";
+import { useRecoilState } from "recoil";
 
 const defaultBoxShadow = "0 5px 10px grey";
 export default ({ overlayOn }: { overlayOn: boolean }) => {
-  const [boxShadow, setBoxShadow] = useState<string>(defaultBoxShadow);
-  const [mainText, setMainText] = useState<string>("");
+  const [boxShadow, setBoxShadow] = useState<string>("none");
+  const [mainText, setMainText] = useRecoilState(mainTextState);
   useEffect(() => {
     if (overlayOn) {
       setBoxShadow(defaultBoxShadow);
@@ -52,25 +30,11 @@ export default ({ overlayOn }: { overlayOn: boolean }) => {
   }, [overlayOn]);
 
   useEffect(() => {
-    (async () => {
-      // const response = await fetch(
-      //   "https://aline-backend-zqvkdcubfa-uw.a.run.app/",
-      //   {
-      //     method: "POST",
-      //     mode: "cors",
-      //     headers: {
-      //       "Content-Type": "application/json",
-      //     },
-      //     body: JSON.stringify({
-      //       url: document.location.href,
-      //       body: document.body.innerHTML,
-      //     }),
-      //   }
-      // );
-      console.log(document.body.innerHTML);
-      const data = await chrome.runtime.sendMessage({
+    const fetchMainText = async () => {
+      var data: any | null = null;
+      const message: any = {
         message: "fetch",
-        url: document.location.href,
+        url: "https://aline-backend-zqvkdcubfa-uw.a.run.app/",
         options: {
           method: "POST",
           mode: "cors",
@@ -82,13 +46,21 @@ export default ({ overlayOn }: { overlayOn: boolean }) => {
             html: document.body.innerHTML,
           }),
         },
-      });
-      // console.log(response);
-      // const data = await response.json();
-      console.log(data);
+      };
+      data = await chrome.runtime.sendMessage(message);
+      while (data == null) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        data = await chrome.runtime.sendMessage(message);
+      }
       // @ts-ignore
-      setMainText(data);
-    })();
+      setMainText(data.text);
+    };
+    if (document.readyState === "complete") {
+      fetchMainText();
+    } else {
+      window.addEventListener("load", () => fetchMainText);
+      return () => window.removeEventListener("load", fetchMainText);
+    }
   }, []);
 
   return (
@@ -107,9 +79,12 @@ export default ({ overlayOn }: { overlayOn: boolean }) => {
     >
       <Sidebar overlayOn={overlayOn} />
       <Box flexGrow={1} padding={20} overflowY="scroll">
-        <Stack maxWidth={800} marginX="auto">
+        <Stack marginX="auto">
           {mainText != "" ? (
             <Container
+              id="aline-main-text"
+              maxWidth="800px"
+              lineHeight={1.5}
               dangerouslySetInnerHTML={{ __html: mainText }}
             ></Container>
           ) : (
