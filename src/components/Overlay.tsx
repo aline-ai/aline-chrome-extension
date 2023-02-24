@@ -9,11 +9,6 @@ import React, { useEffect, useState } from "react";
 
 import Sidebar from "./Sidebar";
 
-// const extractor: any = require("unfluff");
-
-// import { extractFromHtml } from "@extractus/article-extractor";
-
-import { compile, HtmlToTextOptions } from "html-to-text";
 import { mainTextState } from "../states";
 import { useRecoilState } from "recoil";
 

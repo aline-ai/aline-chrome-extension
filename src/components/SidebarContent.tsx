@@ -14,21 +14,28 @@ import {
   notesState,
   currentNoteState,
 } from "../Notes";
+import {
+  useEditor,
+  EditorContent,
+  ReactNodeViewRenderer,
+  NodeViewWrapper,
+  NodeViewContent,
+  mergeAttributes,
+} from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import { Node } from "@tiptap/core";
 
-import ReactQuill from "react-quill";
 import Item from "./Item";
-import { Delta as DeltaType, Sources } from "quill";
-import Quill from "quill";
-const Delta = Quill.import("delta");
 
-import katex from "katex";
-import "katex/dist/katex.min.css";
+// import katex from "katex";
+// import "katex/dist/katex.min.css";
 
-// @ts-ignore
-window.katex = katex;
+// // @ts-ignore
+// window.katex = katex;
 
-import "react-quill/dist/quill.bubble.css";
-import "../styles/quill.sass";
+// import "react-quill/dist/quill.bubble.css";
+// import "../styles/quill.sass";
+import { css, Global } from "@emotion/react";
 
 // Feature: maybe comments
 
@@ -127,6 +134,55 @@ const scrollbarCSS = {
   },
 };
 
+const editorContainerStyles = css`
+  .editorContainer > div {
+    height: 100%;
+    overflow-y: scroll;
+  }
+  .editorContainer .ProseMirror {
+    padding: 16px;
+    padding-bottom: 0;
+    height: 100%;
+    outline: none;
+    border: none;
+    margin-top: -16px;
+  }
+`;
+
+const Autocomplete = Node.create({
+  name: "autocomplete",
+  group: "inline",
+  content: "inline*",
+  inline: true,
+  selectable: false,
+  atom: true,
+  parseHTML() {
+    return [{ tag: "autocomplete" }];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ["span", mergeAttributes(HTMLAttributes), 0];
+  },
+  addAttributes() {
+    return {
+      style: { default: "color: grey" },
+      class: "autoComplete",
+    };
+  },
+  // addNodeView() {
+  //   return ReactNodeViewRenderer(() => (
+  //     <NodeViewWrapper
+  //       className="autoComplete"
+  //       as="span"
+  //       style={{ color: "grey" }}
+  //     >
+  //       {/* test */}
+  //       {/* <span style={{ color: "grey" }}>test</span> */}
+  //       <NodeViewContent />
+  //     </NodeViewWrapper>
+  //   ));
+  // },
+});
+
 export default () => {
   const [fileIndexToRename, setFileIndexToRename] = useState<number | null>(
     null
@@ -135,20 +191,44 @@ export default () => {
   const [currentNoteIndex, setCurrentNoteIndex] = useRecoilState(
     currentNoteIndexState
   );
-  // const currentNote = useRecoilValue(currentNoteState);
   const [currentNote, setCurrentNote] = useRecoilState(currentNoteState);
 
-  const quillRef = useRef<ReactQuill>(null);
+  // const [userDidUpdate, setUserDidUpdate] = useState(true);
+  const userDidUpdate = useRef(true);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
-    if (quillRef!.current === null) return;
-    quillRef.current.focus();
-    const editor = quillRef.current.getEditor();
-    quillRef.current.setEditorSelection(editor, {
-      index: editor.getLength(),
-      length: 0,
-    });
-  });
+  const editor = useEditor(
+    {
+      extensions: [StarterKit, Autocomplete],
+      autofocus: "end",
+      content: currentNote === null ? "" : currentNote.content,
+      onUpdate: ({ editor }) => {
+        setCurrentNote({
+          ...currentNote!,
+          content: editor.getHTML(),
+        });
+        if (userDidUpdate.current) {
+          if (timerRef.current != null) {
+            clearTimeout(timerRef.current);
+          }
+          timerRef.current = setTimeout(() => {
+            const selection = editor.state.selection;
+            timerRef.current = null;
+            if (selection.anchor == selection.head) {
+              userDidUpdate.current = false;
+              editor.commands.insertContent(
+                "<autocomplete>content<br/>more content</autocomplete>",
+                { updateSelection: false }
+              );
+            }
+          }, 400);
+        } else {
+          userDidUpdate.current = true;
+        }
+      },
+    },
+    [currentNoteIndex]
+  );
 
   return (
     <VStack height="100%" spacing={0}>
@@ -216,49 +296,15 @@ export default () => {
           ))}
         </VStack>
       ) : (
-        <Container key={1} h="full">
-          <ReactQuill
-            theme="bubble"
-            value={currentNote.content}
-            ref={quillRef}
-            onChange={(
-              _value: string,
-              _delta: DeltaType,
-              _source: Sources,
-              editor: ReactQuill.UnprivilegedEditor
-            ) =>
-              setCurrentNote({ ...currentNote, content: editor.getContents() })
-            }
-            style={{ fontFamily: "var(--chakra-fonts-body)" }}
-            modules={{
-              toolbar: [
-                ["bold", "italic", "underline", "strike"],
-                ["code-block", "blockquote", "link", "formula"],
-                ["background", "color"],
-                [
-                  { header: 1 },
-                  { header: 2 },
-                  { list: "ordered" },
-                  { list: "bullet" },
-                ],
-              ],
-            }}
-            formats={[
-              "background",
-              "color",
-              "code-block",
-              "code",
-              "bold",
-              "italic",
-              "underline",
-              "strike",
-              "header",
-              "list",
-              "bullet",
-              "link",
-              "formula",
-            ]}
-          />
+        <Container
+          key={1}
+          h="full"
+          p={0}
+          className="editorContainer"
+          overflowY="hidden"
+        >
+          <Global styles={editorContainerStyles} />
+          <EditorContent editor={editor} />
         </Container>
       )}
     </VStack>
