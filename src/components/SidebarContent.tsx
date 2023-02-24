@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useState } from "react";
 import {
   ChevronLeftIcon,
   DeleteIcon,
@@ -7,24 +7,13 @@ import {
   SearchIcon,
 } from "@chakra-ui/icons";
 import { Container, HStack, Input, Spacer, VStack } from "@chakra-ui/react";
-import { useRecoilState, useRecoilValue } from "recoil";
+import { useRecoilState } from "recoil";
 import {
   Note,
   currentNoteIndexState,
   notesState,
   currentNoteState,
 } from "../Notes";
-import {
-  useEditor,
-  EditorContent,
-  ReactNodeViewRenderer,
-  NodeViewWrapper,
-  NodeViewContent,
-  mergeAttributes,
-} from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import { Node } from "@tiptap/core";
-
 import Item from "./Item";
 
 // import katex from "katex";
@@ -33,9 +22,8 @@ import Item from "./Item";
 // // @ts-ignore
 // window.katex = katex;
 
-// import "react-quill/dist/quill.bubble.css";
-// import "../styles/quill.sass";
 import { css, Global } from "@emotion/react";
+import Editor from "./Editor";
 
 // Feature: maybe comments
 
@@ -66,7 +54,6 @@ const NoteListItem = ({
   const [currentNote, setCurrentNote] = useRecoilState(currentNoteState);
   return (
     // TODO: add ripple effect
-    // <Ripples>
     <Item
       _hover={{ bg: "gray.100", cursor: "pointer" }}
       onClick={() => {
@@ -117,7 +104,6 @@ const NoteListItem = ({
         />
       </HStack>
     </Item>
-    // </Ripples>
   );
 };
 
@@ -149,40 +135,6 @@ const editorContainerStyles = css`
   }
 `;
 
-const Autocomplete = Node.create({
-  name: "autocomplete",
-  group: "inline",
-  content: "inline*",
-  inline: true,
-  selectable: false,
-  atom: true,
-  parseHTML() {
-    return [{ tag: "autocomplete" }];
-  },
-  renderHTML({ HTMLAttributes }) {
-    return ["span", mergeAttributes(HTMLAttributes), 0];
-  },
-  addAttributes() {
-    return {
-      style: { default: "color: grey" },
-      class: "autoComplete",
-    };
-  },
-  // addNodeView() {
-  //   return ReactNodeViewRenderer(() => (
-  //     <NodeViewWrapper
-  //       className="autoComplete"
-  //       as="span"
-  //       style={{ color: "grey" }}
-  //     >
-  //       {/* test */}
-  //       {/* <span style={{ color: "grey" }}>test</span> */}
-  //       <NodeViewContent />
-  //     </NodeViewWrapper>
-  //   ));
-  // },
-});
-
 export default () => {
   const [fileIndexToRename, setFileIndexToRename] = useState<number | null>(
     null
@@ -192,43 +144,6 @@ export default () => {
     currentNoteIndexState
   );
   const [currentNote, setCurrentNote] = useRecoilState(currentNoteState);
-
-  // const [userDidUpdate, setUserDidUpdate] = useState(true);
-  const userDidUpdate = useRef(true);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-
-  const editor = useEditor(
-    {
-      extensions: [StarterKit, Autocomplete],
-      autofocus: "end",
-      content: currentNote === null ? "" : currentNote.content,
-      onUpdate: ({ editor }) => {
-        setCurrentNote({
-          ...currentNote!,
-          content: editor.getHTML(),
-        });
-        if (userDidUpdate.current) {
-          if (timerRef.current != null) {
-            clearTimeout(timerRef.current);
-          }
-          timerRef.current = setTimeout(() => {
-            const selection = editor.state.selection;
-            timerRef.current = null;
-            if (selection.anchor == selection.head) {
-              userDidUpdate.current = false;
-              editor.commands.insertContent(
-                "<autocomplete>content<br/>more content</autocomplete>",
-                { updateSelection: false }
-              );
-            }
-          }, 400);
-        } else {
-          userDidUpdate.current = true;
-        }
-      },
-    },
-    [currentNoteIndex]
-  );
 
   return (
     <VStack height="100%" spacing={0}>
@@ -304,7 +219,7 @@ export default () => {
           overflowY="hidden"
         >
           <Global styles={editorContainerStyles} />
-          <EditorContent editor={editor} />
+          <Editor />
         </Container>
       )}
     </VStack>
