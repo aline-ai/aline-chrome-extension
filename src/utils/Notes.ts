@@ -35,12 +35,7 @@ const NewNote = (
 
 const notesState = atom<Note[]>({
   key: "notes",
-  default: [
-    NewNote(
-      "Getting Started",
-      noteDefault
-    ),
-  ],
+  default: [NewNote("Getting Started", noteDefault)],
 });
 
 const currentNoteIndexState = atom<number | null>({

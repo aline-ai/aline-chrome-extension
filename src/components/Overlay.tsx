@@ -31,11 +31,6 @@ export default ({ overlayOn }: { overlayOn: boolean }) => {
         message: "simplify",
         url: "https://aline-backend-zqvkdcubfa-uw.a.run.app/simplify",
         options: {
-          method: "POST",
-          mode: "cors",
-          headers: {
-            "Content-Type": "application/json",
-          },
           body: JSON.stringify({
             url: document.location.href,
             title: document.title,
