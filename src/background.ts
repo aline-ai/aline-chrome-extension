@@ -1,4 +1,10 @@
-import { convertCompilerOptionsFromJson } from "typescript";
+const fetchDefaultOptions = {
+  method: "POST",
+  mode: "cors",
+  headers: {
+    "Content-Type": "application/json",
+  },
+};
 
 chrome.runtime.onMessage.addListener(function (
   request,
@@ -8,8 +14,14 @@ chrome.runtime.onMessage.addListener(function (
   if (request.message === "fetch") {
     // console.log("Sending data: ", request.url, request.options);
     (async () => {
-      console.log("Sending data: ", request.url, request.options);
-      const response = await fetch(request.url, request.options);
+      console.log("Sending data: ", request.url, {
+        ...fetchDefaultOptions,
+        ...request.options,
+      });
+      const response = await fetch(request.url, {
+        ...fetchDefaultOptions,
+        ...request.options,
+      });
       sendResponse(await response.json());
     })();
   }
@@ -29,6 +41,7 @@ chrome.runtime.onConnect.addListener((port) => {
               console.log(`Sending data: ${autocompleteUrl}`, options);
               try {
                 const response = await fetch(autocompleteUrl, {
+                  ...fetchDefaultOptions,
                   ...options,
                   signal: controller.signal,
                 });

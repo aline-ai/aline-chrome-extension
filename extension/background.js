@@ -6,7 +6,7 @@
       /*!***************************!*\
   !*** ./src/background.ts ***!
   \***************************/
-      /***/ function (__unused_webpack_module, exports) {
+      /***/ function () {
         var __assign =
           (this && this.__assign) ||
           function () {
@@ -161,7 +161,13 @@
               return { value: op[0] ? op[1] : void 0, done: true };
             }
           };
-        Object.defineProperty(exports, "__esModule", { value: true });
+        var fetchDefaultOptions = {
+          method: "POST",
+          mode: "cors",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        };
         chrome.runtime.onMessage.addListener(function (
           request,
           _sender,
@@ -179,9 +185,21 @@
                       console.log(
                         "Sending data: ",
                         request.url,
-                        request.options
+                        __assign(
+                          __assign({}, fetchDefaultOptions),
+                          request.options
+                        )
                       );
-                      return [4 /*yield*/, fetch(request.url, request.options)];
+                      return [
+                        4 /*yield*/,
+                        fetch(
+                          request.url,
+                          __assign(
+                            __assign({}, fetchDefaultOptions),
+                            request.options
+                          )
+                        ),
+                      ];
                     case 1:
                       response = _b.sent();
                       _a = sendResponse;
@@ -223,9 +241,13 @@
                               4 /*yield*/,
                               fetch(
                                 autocompleteUrl_1,
-                                __assign(__assign({}, options), {
-                                  signal: controller.signal,
-                                })
+                                __assign(
+                                  __assign(
+                                    __assign({}, fetchDefaultOptions),
+                                    options
+                                  ),
+                                  { signal: controller.signal }
+                                )
                               ),
                             ];
                           case 2:
@@ -269,7 +291,7 @@
   /******/ // Load entry module and return exports
   /******/ // This entry module is referenced by other modules so it can't be inlined
   /******/ var __webpack_exports__ = {};
-  /******/ __webpack_modules__["./src/background.ts"](0, __webpack_exports__);
+  /******/ __webpack_modules__["./src/background.ts"]();
   /******/
   /******/
 })();
