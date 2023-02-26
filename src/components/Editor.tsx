@@ -20,7 +20,6 @@ interface AutocompleteOptions {
 }
 
 interface AutocompleteStorage {
-  didCauseSelectionUpdate: boolean;
   didCauseUpdate: boolean;
   userDidUpdate: boolean;
   timer: NodeJS.Timeout | null;
@@ -70,6 +69,8 @@ const getRangeOfMark = (
   return [first, last];
 };
 
+const cursorIndicator = "CURSOR_INDICATOR";
+
 const Autocomplete = Mark.create<AutocompleteOptions, AutocompleteStorage>({
   name: "autocomplete",
   selectable: false,
@@ -81,13 +82,10 @@ const Autocomplete = Mark.create<AutocompleteOptions, AutocompleteStorage>({
   },
   addStorage() {
     return {
-      didCauseSelectionUpdate: false,
       didCauseUpdate: false,
       userDidUpdate: true,
       timer: null,
-      serviceScriptPort: chrome.runtime.connect({
-        name: "autocomplete",
-      }),
+      serviceScriptPort: chrome.runtime.connect({ name: "autocomplete" }),
       didSuggestAutocomplete: false,
     };
   },
@@ -95,42 +93,122 @@ const Autocomplete = Mark.create<AutocompleteOptions, AutocompleteStorage>({
     this.storage.serviceScriptPort.onMessage.addListener(
       ({ suggestion }: { suggestion: string }) => {
         // const suggestion = "content<br/>more content";
+        this.storage.didSuggestAutocomplete = true;
         const selection = this.editor.state.selection;
-        console.log(selection);
         // random anchor changes to prevent cursor from moving
 
-        // var json: JSONContent = generateJSON(suggestion, [
-        //   StarterKit,
-        //   Autocomplete,
-        // ]);
-        // json!.content!.forEach((v, i) => {
-        // console.log(i, v);
-        // json[i].marks = [{ type: "autocomplete" }];
-        // if (v.marks) {
-        //   json[i].marks = v.marks.concat([{ type: "autocomplete" }]);
-        // } else {
-        //   json[i].marks = [{ type: "autocomplete" }];
-        // }
-        // });
-        // console.log(json);
+        // const content = this.editor.getJSON();
+        type Path = [number, JSONContent][];
+
+        this.storage.didCauseUpdate = true;
+        this.editor.commands.insertContent(cursorIndicator);
+        const contentWithCursor = this.editor.getJSON();
+        this.editor.commands.undo();
+        this.storage.didCauseUpdate = false;
+
+        console.log(contentWithCursor);
+
+        // initializing the path so that it finds the node with the cursorIndicator
+        let path: Path = [];
+        let indexOfCursor = -1;
+        const traverse = (json: JSONContent): Path | null => {
+          if (json.text) {
+            indexOfCursor = json.text.indexOf(cursorIndicator);
+            json.text = json.text.replace(cursorIndicator, "");
+            if (indexOfCursor != -1) {
+              // return [[indexOfCursor, json]];
+              return [];
+            }
+          }
+          if (json.content) {
+            for (let i = 0; i < json.content.length; i++) {
+              const result = traverse(json.content[i]);
+              if (result != null) {
+                return [[i, json], ...result]; // maybe use concat
+              }
+            }
+          }
+          return null;
+        };
+        path = traverse(contentWithCursor)!;
+        console.log(path);
+
+        const tokens = suggestion
+          .split(/(<\/?[a-z0-9]+>)/)
+          .filter((e) => e != "");
+        const tagToType: { [id: string]: string } = {
+          h1: "heading",
+          h2: "heading",
+          h3: "heading",
+          ul: "bulletList",
+          li: "listItem",
+          p: "paragraph",
+        };
+        tokens.forEach((token) => {
+          console.log(JSON.stringify(path));
+          console.log(token);
+          if (token.startsWith("<")) {
+            const tag = token.slice(1, token.length - 1);
+            if (tag.startsWith("/")) {
+              // close tag
+              console.log("close!");
+              const tag = token.slice(2, token.length - 1);
+              const [index, node] = path.pop()!;
+              // path[path.length - 1][0] = index + 1;
+              // assert node == tag
+              // path[path.length - 1][1].content!.splice(index + 1, 0, {
+              //   type: tag,
+              //   content: [],
+              // });
+            } else {
+              // open tag
+              console.log("open!");
+              const _type = tagToType[token.slice(1, token.length - 1)];
+              const [index, node] = path[path.length - 1];
+              node.content!.splice(index + 1, 0, {
+                type: _type,
+                attrs: _type == "heading" ? { level: 1 } : undefined,
+                content: [],
+              });
+              path[path.length - 1][0] = index + 1;
+              path.push([-1, node.content![index + 1]]);
+            }
+          } else {
+            // text
+            // might need serialization
+            console.log("text");
+            const [index, node] = path[path.length - 1];
+            // assert node.text != null
+            node.content!.splice(index, 0, {
+              type: "text",
+              text: token,
+            });
+            path[path.length - 1][0] = index + 1;
+            // if (node.text == "") {
+            //   node.text =
+            //     node.text.slice(0, index) + token + node.text.slice(index);
+            // } else {
+            //   node.text = token;
+            // }
+          }
+        });
+        console.log(contentWithCursor);
 
         // Apply the autocomplete mark to all elements of the json
-        this.storage.didSuggestAutocomplete = true;
         this.storage.didCauseUpdate = true;
-        this.storage.didCauseSelectionUpdate = true;
-        this.editor
-          .chain()
-          .setTextSelection(selection.head - 1)
-          .insertContent(
-            suggestion
-            // `<autocomplete>${suggestion}</autocomplete>`
-            // json
-          )
-          .setTextSelection(selection.head)
-          .run();
+        this.editor.commands.setContent(contentWithCursor);
+        // this.editor
+        //   .chain()
+        //   .setTextSelection(selection.head - 1)
+        //   .insertContent(
+        //     suggestion
+        //     // `<autocomplete>${suggestion}</autocomplete>`
+        //     // json
+        //   )
+        //   .setTextSelection(selection.head)
+        //   .run();
         console.log(this.editor.getJSON());
         this.storage.didCauseUpdate = false;
-        this.storage.didCauseSelectionUpdate = false;
       }
     );
   },
@@ -195,11 +273,9 @@ const Autocomplete = Mark.create<AutocompleteOptions, AutocompleteStorage>({
         this.storage.timer = null;
         if (selection.anchor == selection.head) {
           this.storage.timer = setTimeout(() => {
-            const cursorIndicator = "CURSOR_INDICATOR";
             this.storage.didCauseUpdate = true;
             this.editor.commands.insertContent(cursorIndicator);
             const html = this.editor.getHTML().split(cursorIndicator)[0];
-            console.log(html);
             this.editor.commands.undo();
             this.storage.didCauseUpdate = false;
             this.storage.serviceScriptPort.postMessage({
@@ -223,27 +299,9 @@ const Autocomplete = Mark.create<AutocompleteOptions, AutocompleteStorage>({
     }
   },
   onSelectionUpdate() {
-    if (
-      !this.storage.didCauseSelectionUpdate &&
-      this.storage.didSuggestAutocomplete
-    ) {
+    if (!this.storage.didCauseUpdate && this.storage.didSuggestAutocomplete) {
       this.storage.serviceScriptPort.postMessage({ message: "abort" });
-
-      // var [from, to] = getRangeOfMark(this.editor.getJSON(), "autocomplete");
-      // if (from == null) return;
-      // const selection = this.editor.state.selection;
-
       this.editor.commands.undo();
-      // this.storage.didCauseSelectionUpdate = true;
-      // this.storage.didCauseUpdate = true;
-      // this.editor
-      //   .chain()
-      //   .setTextSelection({ from, to })
-      //   .deleteSelection()
-      //   .setTextSelection(selection)
-      //   .run();
-      // this.storage.didCauseSelectionUpdate = false;
-      // this.storage.didCauseUpdate = false;
       this.storage.didSuggestAutocomplete = false;
     }
   },
