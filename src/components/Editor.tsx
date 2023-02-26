@@ -4,8 +4,8 @@ import { useRecoilState, useRecoilValue } from "recoil";
 import { useEditor } from "@tiptap/react";
 import { EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { currentNoteIndexState, currentNoteState } from "../Notes";
-import { mainTextState } from "../states";
+import { currentNoteIndexState, currentNoteState } from "../utils/Notes";
+import { mainTextState } from "../utils/states";
 import Autocomplete from "./Autocomplete";
 
 // TODO:

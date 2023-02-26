@@ -1,5 +1,5 @@
 import { JSONContent, Mark, mergeAttributes } from "@tiptap/react";
-import { cursorIndicator, getRangeOfMark, unescapeHTML } from "../utils";
+import { cursorIndicator, getRangeOfMark, unescapeHTML } from "../utils/utils";
 
 interface AutocompleteOptions {
   HTMLAttributes: Record<string, any>;

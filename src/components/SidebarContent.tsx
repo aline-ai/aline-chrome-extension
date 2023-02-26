@@ -13,7 +13,7 @@ import {
   currentNoteIndexState,
   notesState,
   currentNoteState,
-} from "../Notes";
+} from "../utils/Notes";
 import Item from "./Item";
 
 // import katex from "katex";

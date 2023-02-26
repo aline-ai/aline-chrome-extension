@@ -9,7 +9,7 @@ import React, { useEffect, useState } from "react";
 
 import Sidebar from "./Sidebar";
 
-import { mainTextState } from "../states";
+import { mainTextState } from "../utils/states";
 import { useRecoilState } from "recoil";
 
 const defaultBoxShadow = "0 5px 10px grey";
