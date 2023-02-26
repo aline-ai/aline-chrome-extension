@@ -9,12 +9,7 @@ import React, { useEffect, useState } from "react";
 
 import Sidebar from "./Sidebar";
 
-// const extractor: any = require("unfluff");
-
-// import { extractFromHtml } from "@extractus/article-extractor";
-
-import { compile, HtmlToTextOptions } from "html-to-text";
-import { mainTextState } from "../states";
+import { mainTextState } from "../utils/states";
 import { useRecoilState } from "recoil";
 
 const defaultBoxShadow = "0 5px 10px grey";
@@ -33,8 +28,8 @@ export default ({ overlayOn }: { overlayOn: boolean }) => {
     const fetchMainText = async () => {
       var data: any | null = null;
       const message: any = {
-        message: "fetch",
-        url: "https://aline-backend-zqvkdcubfa-uw.a.run.app/",
+        message: "simplify",
+        url: "https://aline-backend-zqvkdcubfa-uw.a.run.app/simplify",
         options: {
           method: "POST",
           mode: "cors",
@@ -43,6 +38,7 @@ export default ({ overlayOn }: { overlayOn: boolean }) => {
           },
           body: JSON.stringify({
             url: document.location.href,
+            title: document.title,
             html: document.body.innerHTML,
           }),
         },
@@ -69,7 +65,7 @@ export default ({ overlayOn }: { overlayOn: boolean }) => {
       display="flex"
       height="100vh"
       width="100vw"
-      zIndex="9999"
+      zIndex="99999999"
       top={overlayOn ? 0 : "-100vh"}
       left={0}
       background="white"

@@ -6,7 +6,7 @@ export default (props: ButtonProps) => {
     <Button
       position="fixed"
       colorScheme="cyan"
-      zIndex={99999}
+      zIndex={999999999}
       borderRadius="50%"
       border="none"
       fontSize="2rem"

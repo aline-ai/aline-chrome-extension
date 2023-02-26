@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useState } from "react";
 import {
   ChevronLeftIcon,
   DeleteIcon,
@@ -13,22 +13,17 @@ import {
   currentNoteIndexState,
   notesState,
   currentNoteState,
-} from "../Notes";
-
-import ReactQuill from "react-quill";
+} from "../utils/Notes";
 import Item from "./Item";
-import { Delta as DeltaType, Sources } from "quill";
-import Quill from "quill";
-const Delta = Quill.import("delta");
 
-import katex from "katex";
-import "katex/dist/katex.min.css";
+// import katex from "katex";
+// import "katex/dist/katex.min.css";
 
-// @ts-ignore
-window.katex = katex;
+// // @ts-ignore
+// window.katex = katex;
 
-import "react-quill/dist/quill.bubble.css";
-import "../styles/quill.sass";
+import { css, Global } from "@emotion/react";
+import Editor from "./Editor";
 
 // Feature: maybe comments
 
@@ -59,7 +54,6 @@ const NoteListItem = ({
   const [currentNote, setCurrentNote] = useRecoilState(currentNoteState);
   return (
     // TODO: add ripple effect
-    // <Ripples>
     <Item
       _hover={{ bg: "gray.100", cursor: "pointer" }}
       onClick={() => {
@@ -110,7 +104,6 @@ const NoteListItem = ({
         />
       </HStack>
     </Item>
-    // </Ripples>
   );
 };
 
@@ -127,28 +120,30 @@ const scrollbarCSS = {
   },
 };
 
+const editorContainerStyles = css`
+  .editorContainer > div {
+    height: 100%;
+    overflow-y: scroll;
+  }
+  .editorContainer .ProseMirror {
+    padding: 16px;
+    padding-bottom: 0;
+    height: 100%;
+    outline: none;
+    border: none;
+    margin-top: -16px;
+  }
+`;
+
 export default () => {
   const [fileIndexToRename, setFileIndexToRename] = useState<number | null>(
     null
   );
-  const [notes, setNotes] = useRecoilState(notesState);
+  const notes = useRecoilValue(notesState);
   const [currentNoteIndex, setCurrentNoteIndex] = useRecoilState(
     currentNoteIndexState
   );
-  // const currentNote = useRecoilValue(currentNoteState);
   const [currentNote, setCurrentNote] = useRecoilState(currentNoteState);
-
-  const quillRef = useRef<ReactQuill>(null);
-
-  useEffect(() => {
-    if (quillRef!.current === null) return;
-    quillRef.current.focus();
-    const editor = quillRef.current.getEditor();
-    quillRef.current.setEditorSelection(editor, {
-      index: editor.getLength(),
-      length: 0,
-    });
-  });
 
   return (
     <VStack height="100%" spacing={0}>
@@ -216,49 +211,15 @@ export default () => {
           ))}
         </VStack>
       ) : (
-        <Container key={1} h="full">
-          <ReactQuill
-            theme="bubble"
-            value={currentNote.content}
-            ref={quillRef}
-            onChange={(
-              _value: string,
-              _delta: DeltaType,
-              _source: Sources,
-              editor: ReactQuill.UnprivilegedEditor
-            ) =>
-              setCurrentNote({ ...currentNote, content: editor.getContents() })
-            }
-            style={{ fontFamily: "var(--chakra-fonts-body)" }}
-            modules={{
-              toolbar: [
-                ["bold", "italic", "underline", "strike"],
-                ["code-block", "blockquote", "link", "formula"],
-                ["background", "color"],
-                [
-                  { header: 1 },
-                  { header: 2 },
-                  { list: "ordered" },
-                  { list: "bullet" },
-                ],
-              ],
-            }}
-            formats={[
-              "background",
-              "color",
-              "code-block",
-              "code",
-              "bold",
-              "italic",
-              "underline",
-              "strike",
-              "header",
-              "list",
-              "bullet",
-              "link",
-              "formula",
-            ]}
-          />
+        <Container
+          key={1}
+          h="full"
+          p={0}
+          className="editorContainer"
+          overflowY="hidden"
+        >
+          <Global styles={editorContainerStyles} />
+          <Editor />
         </Container>
       )}
     </VStack>

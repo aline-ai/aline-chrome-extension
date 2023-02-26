@@ -8,7 +8,7 @@ import { ChevronDownIcon, ChevronUpIcon } from "@chakra-ui/icons";
 
 import Overlay from "./components/Overlay";
 import FloatingButton from "./components/FloatingButton";
-import theme from "./theme";
+import theme from "./utils/theme";
 
 export default () => {
   // This uses Shadow DOM to isolate the Chakra UI theme from the rest of the page.
