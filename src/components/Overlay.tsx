@@ -29,7 +29,7 @@ export default ({ overlayOn }: { overlayOn: boolean }) => {
       var data: any | null = null;
       const message: any = {
         message: "fetch",
-        url: "https://aline-backend-zqvkdcubfa-uw.a.run.app/",
+        url: "https://aline-backend-zqvkdcubfa-uw.a.run.app/simplify",
         options: {
           method: "POST",
           mode: "cors",
@@ -38,6 +38,7 @@ export default ({ overlayOn }: { overlayOn: boolean }) => {
           },
           body: JSON.stringify({
             url: document.location.href,
+            title: document.title,
             html: document.body.innerHTML,
           }),
         },
@@ -64,7 +65,7 @@ export default ({ overlayOn }: { overlayOn: boolean }) => {
       display="flex"
       height="100vh"
       width="100vw"
-      zIndex="9999"
+      zIndex="99999999"
       top={overlayOn ? 0 : "-100vh"}
       left={0}
       background="white"

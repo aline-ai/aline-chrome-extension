@@ -7,7 +7,7 @@ import {
   SearchIcon,
 } from "@chakra-ui/icons";
 import { Container, HStack, Input, Spacer, VStack } from "@chakra-ui/react";
-import { useRecoilState } from "recoil";
+import { useRecoilState, useRecoilValue } from "recoil";
 import {
   Note,
   currentNoteIndexState,
@@ -139,7 +139,7 @@ export default () => {
   const [fileIndexToRename, setFileIndexToRename] = useState<number | null>(
     null
   );
-  const [notes, setNotes] = useRecoilState(notesState);
+  const notes = useRecoilValue(notesState);
   const [currentNoteIndex, setCurrentNoteIndex] = useRecoilState(
     currentNoteIndexState
   );
