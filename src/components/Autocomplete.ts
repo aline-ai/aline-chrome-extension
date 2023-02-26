@@ -241,11 +241,6 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
             this.storage.serviceScriptPort.postMessage({
               message: "fetch",
               options: {
-                method: "POST",
-                mode: "cors",
-                headers: {
-                  "Content-Type": "application/json",
-                },
                 body: JSON.stringify({
                   url: document.location.href,
                   notes: html,
