@@ -11,6 +11,8 @@ import Autocomplete from "./Autocomplete";
 // TODO:
 // - move utils to utils.ts
 // - move types to types.ts
+// - do error handling
+// - implement loading bar
 // - implement background script to store notes in chrome storage
 // - implement markdown
 // - implement latex

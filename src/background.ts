@@ -11,7 +11,7 @@ chrome.runtime.onMessage.addListener(function (
   _sender,
   sendResponse
 ): boolean {
-  if (request.message === "fetch") {
+  if (request.message === "fetch" || request.message === "simplify") {
     // console.log("Sending data: ", request.url, request.options);
     (async () => {
       console.log("Sending data: ", request.url, {

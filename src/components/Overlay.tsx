@@ -28,7 +28,7 @@ export default ({ overlayOn }: { overlayOn: boolean }) => {
     const fetchMainText = async () => {
       var data: any | null = null;
       const message: any = {
-        message: "fetch",
+        message: "simplify",
         url: "https://aline-backend-zqvkdcubfa-uw.a.run.app/simplify",
         options: {
           method: "POST",
