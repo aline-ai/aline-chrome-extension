@@ -100,6 +100,7 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
       ({ suggestion }: { suggestion: string }) => {
         // TODO: deal with anchor types
         this.storage.didSuggestAutocomplete = true;
+        this.options.setIsLoading(false);
         this.storage.oldContent = this.editor.getJSON();
         var contentWithCursor = getContentWithCursor(
           this,
@@ -259,6 +260,7 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
   onUpdate() {
     // console.log("fired on update");
     if (!this.storage.didCauseUpdate) {
+      this.options.setIsLoading(false);
       if (this.storage.timer != null) {
         clearTimeout(this.storage.timer);
       }
@@ -325,6 +327,7 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
               context = elements.map((e) => e.outerHTML).join("");
             }
           }
+          this.options.setIsLoading(true);
           this.storage.serviceScriptPort.postMessage({
             message: "fetch",
             options: {
@@ -343,6 +346,7 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
     // console.log("fired on selection");
     if (!this.storage.didCauseUpdate && this.storage.didSuggestAutocomplete) {
       this.storage.didSuggestAutocomplete = false;
+      this.options.setIsLoading(false);
       this.storage.serviceScriptPort.postMessage({ message: "abort" });
 
       this.editor.storage.didCauseUpdate = true;

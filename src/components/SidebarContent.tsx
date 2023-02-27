@@ -6,7 +6,14 @@ import {
   EditIcon,
   SearchIcon,
 } from "@chakra-ui/icons";
-import { Container, HStack, Input, Spacer, VStack } from "@chakra-ui/react";
+import {
+  Container,
+  HStack,
+  Input,
+  Progress,
+  Spacer,
+  VStack,
+} from "@chakra-ui/react";
 import { useRecoilState, useRecoilValue } from "recoil";
 import {
   Note,
@@ -144,6 +151,7 @@ export default () => {
     currentNoteIndexState
   );
   const [currentNote, setCurrentNote] = useRecoilState(currentNoteState);
+  const [isLoading, setIsLoading] = useState(false);
 
   return (
     <VStack height="100%" spacing={0}>
@@ -211,16 +219,25 @@ export default () => {
           ))}
         </VStack>
       ) : (
-        <Container
-          key={1}
-          h="full"
-          p={0}
-          className="editorContainer"
-          overflowY="hidden"
-        >
-          <Global styles={editorContainerStyles} />
-          <Editor />
-        </Container>
+        <>
+          <Container
+            key={1}
+            h="full"
+            p={0}
+            className="editorContainer"
+            overflowY="hidden"
+          >
+            <Global styles={editorContainerStyles} />
+            <Editor setIsLoading={setIsLoading} />
+          </Container>
+          <Progress
+            height={isLoading ? 2 : 0}
+            width="full"
+            colorScheme="cyan"
+            transition="height 0.4s ease-in-out"
+            isIndeterminate
+          />
+        </>
       )}
     </VStack>
   );

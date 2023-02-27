@@ -18,8 +18,11 @@ import Autocomplete from "./Autocomplete";
 // - implement latex
 // - exports
 
-export default () => {
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+export default ({
+  setIsLoading,
+}: {
+  setIsLoading(isLoading: boolean): void;
+}) => {
   const currentNoteIndex = useRecoilValue(currentNoteIndexState);
   const [currentNote, setCurrentNote] = useRecoilState(currentNoteState);
   const mainText = useRecoilValue(mainTextState);
@@ -31,7 +34,6 @@ export default () => {
         Autocomplete.configure({
           context: mainText,
           shadowDom,
-          isLoading,
           setIsLoading,
         }),
       ],
