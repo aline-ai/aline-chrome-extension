@@ -1,9 +1,14 @@
 import { JSONContent, Mark, mergeAttributes } from "@tiptap/react";
 import { cursorIndicator, getRangeOfMark, unescapeHTML } from "../utils/utils";
+import { Editor } from "@tiptap/core";
+import { DOMElement } from "react";
 
 interface AutocompleteOptions {
   HTMLAttributes: Record<string, any>;
   context: string;
+  shadowDom: HTMLDivElement | null;
+  isLoading: boolean;
+  setIsLoading(isLoading: boolean): void;
 }
 
 interface AutocompleteStorage {
@@ -26,14 +31,52 @@ declare module "@tiptap/core" {
 
 type Path = [number, JSONContent][];
 
+const getContentWithCursor = (
+  _this: {
+    storage: AutocompleteStorage;
+    editor: Editor;
+  },
+  mode: string
+) => {
+  // Helper function to get the content with the cursor indicator
+  _this.storage.didCauseUpdate = true;
+  _this.editor.commands.insertContent(cursorIndicator);
+  const html = mode == "html" ? _this.editor.getHTML() : _this.editor.getJSON();
+  _this.editor.commands.undo();
+  _this.storage.didCauseUpdate = false;
+  return html;
+};
+
+const treeMap = (
+  json: JSONContent,
+  f: (json: JSONContent) => JSONContent
+): JSONContent => {
+  json.content = json.content?.map((json) => treeMap(json, f));
+  return f(json);
+};
+
+const treeFilter = (
+  json: JSONContent,
+  f: (json: JSONContent) => boolean
+): JSONContent => {
+  return {
+    ...json,
+    content: json.content?.filter(f).map((json) => treeFilter(json, f)),
+  };
+};
+
 export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
   name: "autocomplete",
   selectable: false,
   spanning: false,
+  atom: true,
   addOptions() {
     return {
       HTMLAttributes: {},
       context: "",
+      shadowDom: null,
+      isLoading: false,
+      setIsLoading: (isLoading: boolean) => {},
     };
   },
   addStorage() {
@@ -50,11 +93,10 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
       ({ suggestion }: { suggestion: string }) => {
         // TODO: deal with anchor types
         this.storage.didSuggestAutocomplete = true;
-        this.storage.didCauseUpdate = true;
-        this.editor.commands.insertContent(cursorIndicator);
-        const contentWithCursor = this.editor.getJSON();
-        this.editor.commands.undo();
-        this.storage.didCauseUpdate = false;
+        var contentWithCursor = getContentWithCursor(
+          this,
+          "json"
+        ) as JSONContent;
 
         // initializing the path so that it finds the node with the cursorIndicator
         let path: Path = [];
@@ -102,7 +144,6 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
             const tag = token.slice(1, token.length - 1);
             if (tag.startsWith("/")) {
               // close tag
-              console.log("close!");
               const tag = token.slice(2, token.length - 1);
               const _type = tagToType[tag];
               if (_type == undefined) {
@@ -112,7 +153,6 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
               // assert node == tag
             } else {
               // open tag
-              console.log("open!");
               const _type = tagToType[token.slice(1, token.length - 1)];
               if (_type == undefined) {
                 return;
@@ -132,7 +172,6 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
             }
           } else {
             // text
-            console.log("text");
             const [index, node] = path[path.length - 1];
             // assert node.text != null
             node.content!.splice(index, 0, {
@@ -143,13 +182,7 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
             path[path.length - 1][0] = index + 1;
           }
         });
-        const filterTree = (json: JSONContent) => {
-          json.content = json.content
-            ?.filter((e) => e.text !== "")
-            .map(filterTree);
-          return json;
-        };
-        filterTree(contentWithCursor);
+        contentWithCursor = treeFilter(contentWithCursor, (e) => e.text !== "");
 
         // Apply the autocomplete mark to all elements of the json
         this.storage.didCauseUpdate = true;
@@ -175,7 +208,7 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
   },
   addAttributes() {
     return {
-      style: { default: "color: grey" },
+      style: { default: "color: grey; user-select: none" },
       class: "autocomplete",
     };
   },
@@ -196,10 +229,6 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
             this.editor.getJSON(),
             "autocomplete"
           );
-
-          // if (first == null) return true;
-          // const from = this.editor.state.selection.from,
-          //   to = this.editor.state.selection.from + last! - first;
 
           const content = this.editor.getJSON();
           // remove the autocomplete mark from the content
@@ -231,33 +260,87 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
         const selection = this.editor.state.selection;
         this.storage.timer = null;
         if (selection.anchor == selection.head) {
-          this.storage.timer = setTimeout(() => {
-            this.storage.didCauseUpdate = true;
-            this.editor.commands.insertContent(cursorIndicator);
-            const html = this.editor.getHTML().split(cursorIndicator)[0];
-            this.editor.commands.undo();
-            console.log(this.editor.getJSON());
-            this.storage.didCauseUpdate = false;
-            this.storage.serviceScriptPort.postMessage({
-              message: "fetch",
-              options: {
-                body: JSON.stringify({
-                  url: document.location.href,
-                  notes: html,
-                  context: this.options.context,
-                }),
-              },
-            });
-          }, 1000);
+          const html = getContentWithCursor(this, "html").split(
+            cursorIndicator
+          )[0];
+
+          var context = this.options.context;
+          getFocusedContext: if (this.options.shadowDom) {
+            // Can make this more robust
+            const width = window.innerWidth,
+              height = window.innerHeight,
+              x = width * 0.75,
+              y1 = height * 0.2,
+              y2 = height * 0.8,
+              shadowRoot: ShadowRoot | null = this.options.shadowDom.shadowRoot,
+              alineMainText = shadowRoot?.querySelector("#aline-main-text");
+
+            if (shadowRoot == null) {
+              console.error("Shadow root is null");
+              break getFocusedContext;
+            }
+
+            if (alineMainText == null || alineMainText == undefined) {
+              console.error("alineMainText is null");
+              break getFocusedContext;
+            }
+
+            var from = shadowRoot.elementFromPoint(x, y1),
+              to = shadowRoot.elementFromPoint(x, y2);
+            if (!alineMainText.contains(from)) {
+              from = alineMainText.firstElementChild;
+            }
+            if (!alineMainText.contains(to)) {
+              from = alineMainText.lastElementChild;
+            }
+
+            if (from && to) {
+              console.log("Using viewport");
+              // maybe check if this is the right parent
+              const elements: Element[] = [];
+              let current: Element | null = from;
+              if (current.previousElementSibling)
+                current = current.previousElementSibling;
+              while (current && current != to && !current.contains(to)) {
+                elements.push(current!);
+                current = current.nextElementSibling;
+              }
+              elements.push(to);
+              context = elements.map((e) => e.outerHTML).join("");
+              console.log(elements);
+              console.log(elements.map((e) => e.outerHTML));
+              console.log("context", context.length);
+            }
+          }
+          console.log("context, outer", context.length);
+          this.storage.serviceScriptPort.postMessage({
+            message: "fetch",
+            options: {
+              body: JSON.stringify({
+                url: document.location.href,
+                notes: html,
+                context,
+              }),
+            },
+          });
         }
-      }, 400);
+      }, 600);
     }
   },
   onSelectionUpdate() {
     if (!this.storage.didCauseUpdate && this.storage.didSuggestAutocomplete) {
-      this.storage.serviceScriptPort.postMessage({ message: "abort" });
-      this.editor.commands.undo();
       this.storage.didSuggestAutocomplete = false;
+      this.storage.serviceScriptPort.postMessage({ message: "abort" });
+      this.editor.storage.didCauseUpdate = true;
+      this.editor.commands.setContent(
+        treeFilter(
+          this.editor.getJSON(),
+          (entity) =>
+            !entity.marks ||
+            !entity.marks.find((mark) => mark.type == "autocomplete")
+        )
+      );
+      this.editor.storage.didCauseUpdate = false;
     }
   },
 });
