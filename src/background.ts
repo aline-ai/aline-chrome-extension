@@ -23,7 +23,7 @@ interface SimplifyResponseType {
 
 const sevenDays = 7 * 24 * 60 * 60 * 1000;
 
-chrome.storage.local.clear();
+// chrome.storage.local.clear();
 
 // chrome.storage.local
 //   .get("https://climate.nasa.gov/global-warming-vs-climate-change/")
