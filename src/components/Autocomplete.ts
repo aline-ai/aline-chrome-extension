@@ -2,6 +2,7 @@ import { JSONContent, Mark, mergeAttributes } from "@tiptap/react";
 import { cursorIndicator, getRangeOfMark, unescapeHTML } from "../utils/utils";
 import { Editor } from "@tiptap/core";
 import { DOMElement } from "react";
+import { Plugin, PluginKey } from "@tiptap/pm/state";
 
 interface AutocompleteOptions {
   HTMLAttributes: Record<string, any>;
@@ -141,9 +142,8 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
           li: "listItem",
           p: "paragraph",
         };
+        // if thi
         tokens.forEach((token) => {
-          // console.log(JSON.stringify(path));
-          // console.log(token);
           // Deal with links
           token = token.replace("\n", "");
           if (token.startsWith("<")) {
@@ -257,6 +257,7 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
     };
   },
   onUpdate() {
+    // console.log("fired on update");
     if (!this.storage.didCauseUpdate) {
       if (this.storage.timer != null) {
         clearTimeout(this.storage.timer);
@@ -339,54 +340,12 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
     }
   },
   onSelectionUpdate() {
+    // console.log("fired on selection");
     if (!this.storage.didCauseUpdate && this.storage.didSuggestAutocomplete) {
       this.storage.didSuggestAutocomplete = false;
       this.storage.serviceScriptPort.postMessage({ message: "abort" });
 
-      const existsMarkedAutocomplete = (entity: JSONContent): boolean => {
-        if (
-          entity.marks != undefined &&
-          entity.marks.findIndex((mark) => mark.type == "autocomplete") != -1
-        )
-          return true;
-        return entity.content?.some(existsMarkedAutocomplete) || false;
-      };
-      if (!existsMarkedAutocomplete(this.editor.getJSON())) {
-        return;
-      }
-
-      const isMarkedAutocomplete = (entity: JSONContent): boolean => {
-        if (
-          entity.marks != undefined &&
-          entity.marks.findIndex((mark) => mark.type == "autocomplete") != -1
-        )
-          return true;
-        return (
-          (entity.type == "paragraph" &&
-            entity.content?.some(isMarkedAutocomplete)) ||
-          false
-        );
-      };
       this.editor.storage.didCauseUpdate = true;
-      // this.editor.commands.setContent(
-      //   treeMap(
-      //     treeFilter(
-      //       this.editor.getJSON(),
-      //       (entity) => !isMarkedAutocomplete(entity)
-      //     ),
-      //     (entity) => {
-      //       if (
-      //         entity.type == "listItem" &&
-      //         entity.content &&
-      //         entity.content.length == 1
-      //       )
-      //         entity.content = [
-      //           { type: "paragraph", content: [{ type: "text", text: "" }] },
-      //         ];
-      //       return entity;
-      //     }
-      //   )
-      // );
       this.editor.commands.setContent(this.storage.oldContent);
       this.editor.storage.didCauseUpdate = false;
     }

@@ -38,6 +38,7 @@ const cursorIndicator = "CURSOR_INDICATOR-" + uuidv4();
 const unescapeHTML = (str: string) =>
   str
     .replace(/&apos;/g, "'")
+    .replace(/&nbsp;/g, " ")
     .replace("&#8217;", "'")
     .replace(/&quot;/g, '"')
     .replace(/&lt;/g, "<")
