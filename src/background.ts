@@ -69,8 +69,6 @@ chrome.runtime.onMessage.addListener(function (
     });
   }
   if (request.message === "fetch") {
-    // console.log("Sending data: ", request.url, request.options);
-    // fetchRequest();
     (async () => {
       console.log("Sending data: ", request.url, {
         ...fetchDefaultOptions,
