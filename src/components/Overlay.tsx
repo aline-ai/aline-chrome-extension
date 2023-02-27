@@ -81,10 +81,15 @@ export default ({ overlayOn }: { overlayOn: boolean }) => {
           ) : (
             <>
               <Skeleton height="20px" width="200px" />
-              {[5, 9, 7, 2, 3].map((i) => (
+              {[5, 9, 7, 2, 3].map((i, index) => (
                 <>
-                  <br />
-                  <SkeletonText noOfLines={i} spacing="4" skeletonHeight="2" />
+                  <br key={index} />
+                  <SkeletonText
+                    key={index}
+                    noOfLines={i}
+                    spacing="4"
+                    skeletonHeight="2"
+                  />
                 </>
               ))}
             </>

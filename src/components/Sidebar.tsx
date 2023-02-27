@@ -18,6 +18,17 @@ export default ({ overlayOn }: { overlayOn: boolean }) => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  const [oldHTMLOverflow, setOldHTMLOverflow] = useState<string>("auto");
+
+  useEffect(() => {
+    setOldHTMLOverflow(document.documentElement.style.overflow);
+    if (overlayOn) {
+      document.documentElement.style.overflow = "hidden";
+    } else {
+      document.documentElement.style.overflow = oldHTMLOverflow;
+    }
+  }, [overlayOn]);
+
   return (
     <>
       <Box

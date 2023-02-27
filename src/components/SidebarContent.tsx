@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import {
+  AddIcon,
   ChevronLeftIcon,
   DeleteIcon,
   DragHandleIcon,
@@ -20,8 +21,10 @@ import {
   currentNoteIndexState,
   notesState,
   currentNoteState,
+  NewNote,
 } from "../utils/Notes";
 import Item from "./Item";
+import { getRandom, newNoteAdjectives, scrollbarCSS } from "../utils/constants";
 
 // import katex from "katex";
 // import "katex/dist/katex.min.css";
@@ -31,6 +34,7 @@ import Item from "./Item";
 
 import { css, Global } from "@emotion/react";
 import Editor from "./Editor";
+import { createQualifiedName } from "typescript";
 
 // Feature: maybe comments
 
@@ -114,19 +118,6 @@ const NoteListItem = ({
   );
 };
 
-const scrollbarCSS = {
-  "&::-webkit-scrollbar-track": {
-    backgroundColor: "#F5F5F5",
-  },
-  "&::-webkit-scrollbar": {
-    width: "6px",
-    backgroundColor: "#F5F5F5",
-  },
-  "&::-webkit-scrollbar-thumb": {
-    backgroundColor: "grey",
-  },
-};
-
 const editorContainerStyles = css`
   .editorContainer > div {
     height: 100%;
@@ -140,18 +131,44 @@ const editorContainerStyles = css`
     border: none;
     margin-top: -16px;
   }
+
+  .editorContainer > div::-webkit-scrollbar-track {
+    background-color: "#F5F5F5";
+  }
+
+  .editorContainer > div::-webkit-scrollbar {
+    width: "6px";
+    background-color: "#F5F5F5";
+  }
+
+  .editorContainer > div::-webkit-scrollbar-thumb {
+    background-color: "grey";
+  }
 `;
 
 export default () => {
   const [fileIndexToRename, setFileIndexToRename] = useState<number | null>(
     null
   );
-  const notes = useRecoilValue(notesState);
+  const [notes, setNotes] = useRecoilState(notesState);
   const [currentNoteIndex, setCurrentNoteIndex] = useRecoilState(
     currentNoteIndexState
   );
   const [currentNote, setCurrentNote] = useRecoilState(currentNoteState);
   const [isLoading, setIsLoading] = useState(false);
+
+  const createNewNote = () => {
+    // Avoid duplicate titles with high probability
+    var adjective = getRandom(newNoteAdjectives);
+    if (notes.some((note) => note.title === `Your ${adjective} new note`))
+      adjective = getRandom(newNoteAdjectives);
+    if (notes.some((note) => note.title === `Your ${adjective} new note`))
+      adjective = getRandom(newNoteAdjectives);
+    setNotes([
+      ...notes,
+      NewNote(`Your ${adjective} new note`, "Your new note"),
+    ]);
+  };
 
   return (
     <VStack height="100%" spacing={0}>
@@ -167,7 +184,10 @@ export default () => {
       >
         {currentNote === null ? (
           <>
-            Project 1 notes <SearchIcon {...IconButtonStyle} />
+            Project 1 notes
+            <SearchIcon {...IconButtonStyle} />
+            <Spacer />
+            <AddIcon {...IconButtonStyle} onClick={createNewNote} />
           </>
         ) : (
           <>
