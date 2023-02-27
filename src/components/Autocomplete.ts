@@ -61,7 +61,7 @@ const treeFilter = (
 ): JSONContent => {
   return {
     ...json,
-    content: json.content?.filter(f).map((json) => treeFilter(json, f)),
+    content: json.content?.map((json) => treeFilter(json, f)).filter(f),
   };
 };
 
@@ -120,7 +120,6 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
           return null;
         };
         path = traverse(contentWithCursor)!;
-        console.log(path);
 
         const tokens = suggestion
           .split(/(<\/?[a-z0-9]+>)/)
@@ -267,12 +266,8 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
           var context = this.options.context;
           getFocusedContext: if (this.options.shadowDom) {
             // Can make this more robust
-            const width = window.innerWidth,
-              height = window.innerHeight,
-              x = width * 0.75,
-              y1 = height * 0.2,
-              y2 = height * 0.8,
-              shadowRoot: ShadowRoot | null = this.options.shadowDom.shadowRoot,
+            const shadowRoot: ShadowRoot | null =
+                this.options.shadowDom.shadowRoot,
               alineMainText = shadowRoot?.querySelector("#aline-main-text");
 
             if (shadowRoot == null) {
@@ -285,14 +280,29 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
               break getFocusedContext;
             }
 
+            const height = window.innerHeight,
+              rect = alineMainText.getBoundingClientRect(),
+              x = rect.left * 0.9 + rect.right * 0.1,
+              y1 = height * 0.1,
+              y2 = height * 0.9;
+
             var from = shadowRoot.elementFromPoint(x, y1),
               to = shadowRoot.elementFromPoint(x, y2);
-            if (!alineMainText.contains(from)) {
-              from = alineMainText.firstElementChild;
-            }
-            if (!alineMainText.contains(to)) {
-              from = alineMainText.lastElementChild;
-            }
+            const getContainingAscendant = (
+              e: Element | null
+            ): Element | null => {
+              if (e == null) return null;
+              while (e.parentElement != null) {
+                if (e.parentElement == alineMainText) return e;
+                e = e.parentElement;
+              }
+              return null;
+            };
+            console.log(from, to);
+            from =
+              getContainingAscendant(from) || alineMainText.firstElementChild;
+            to = getContainingAscendant(to) || alineMainText.lastElementChild;
+            console.log(from, to);
 
             if (from && to) {
               console.log("Using viewport");
@@ -301,18 +311,15 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
               let current: Element | null = from;
               if (current.previousElementSibling)
                 current = current.previousElementSibling;
+              if (to.nextElementSibling) to = to.nextElementSibling;
               while (current && current != to && !current.contains(to)) {
                 elements.push(current!);
                 current = current.nextElementSibling;
               }
               elements.push(to);
               context = elements.map((e) => e.outerHTML).join("");
-              console.log(elements);
-              console.log(elements.map((e) => e.outerHTML));
-              console.log("context", context.length);
             }
           }
-          console.log("context, outer", context.length);
           this.storage.serviceScriptPort.postMessage({
             message: "fetch",
             options: {
@@ -336,8 +343,10 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
         treeFilter(
           this.editor.getJSON(),
           (entity) =>
-            !entity.marks ||
-            !entity.marks.find((mark) => mark.type == "autocomplete")
+            (!entity.marks ||
+              !entity.marks.find((mark) => mark.type == "autocomplete")) &&
+            entity.text != "" &&
+            entity.content?.length != 0
         )
       );
       this.editor.storage.didCauseUpdate = false;
