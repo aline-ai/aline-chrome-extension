@@ -17,6 +17,7 @@ interface AutocompleteStorage {
   timer: NodeJS.Timeout | null;
   serviceScriptPort: chrome.runtime.Port;
   didSuggestAutocomplete: boolean;
+  oldContent: JSONContent;
 }
 
 declare module "@tiptap/core" {
@@ -76,7 +77,7 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
       context: "",
       shadowDom: null,
       isLoading: false,
-      setIsLoading: (isLoading: boolean) => {},
+      setIsLoading: (_isLoading: boolean) => {},
     };
   },
   addStorage() {
@@ -86,13 +87,19 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
       timer: null,
       serviceScriptPort: chrome.runtime.connect({ name: "autocomplete" }),
       didSuggestAutocomplete: false,
+      oldContent: {
+        type: "content",
+        content: [{ type: "paragraph", content: [{ type: "text", text: "" }] }],
+      },
     };
   },
   onCreate() {
+    this.storage.oldContent = this.editor.getJSON();
     this.storage.serviceScriptPort.onMessage.addListener(
       ({ suggestion }: { suggestion: string }) => {
         // TODO: deal with anchor types
         this.storage.didSuggestAutocomplete = true;
+        this.storage.oldContent = this.editor.getJSON();
         var contentWithCursor = getContentWithCursor(
           this,
           "json"
@@ -335,7 +342,19 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
     if (!this.storage.didCauseUpdate && this.storage.didSuggestAutocomplete) {
       this.storage.didSuggestAutocomplete = false;
       this.storage.serviceScriptPort.postMessage({ message: "abort" });
-      this.editor.storage.didCauseUpdate = true;
+
+      const existsMarkedAutocomplete = (entity: JSONContent): boolean => {
+        if (
+          entity.marks != undefined &&
+          entity.marks.findIndex((mark) => mark.type == "autocomplete") != -1
+        )
+          return true;
+        return entity.content?.some(existsMarkedAutocomplete) || false;
+      };
+      if (!existsMarkedAutocomplete(this.editor.getJSON())) {
+        return;
+      }
+
       const isMarkedAutocomplete = (entity: JSONContent): boolean => {
         if (
           entity.marks != undefined &&
@@ -348,12 +367,27 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
           false
         );
       };
-      this.editor.commands.setContent(
-        treeFilter(
-          this.editor.getJSON(),
-          (entity) => !isMarkedAutocomplete(entity)
-        )
-      );
+      this.editor.storage.didCauseUpdate = true;
+      // this.editor.commands.setContent(
+      //   treeMap(
+      //     treeFilter(
+      //       this.editor.getJSON(),
+      //       (entity) => !isMarkedAutocomplete(entity)
+      //     ),
+      //     (entity) => {
+      //       if (
+      //         entity.type == "listItem" &&
+      //         entity.content &&
+      //         entity.content.length == 1
+      //       )
+      //         entity.content = [
+      //           { type: "paragraph", content: [{ type: "text", text: "" }] },
+      //         ];
+      //       return entity;
+      //     }
+      //   )
+      // );
+      this.editor.commands.setContent(this.storage.oldContent);
       this.editor.storage.didCauseUpdate = false;
     }
   },
