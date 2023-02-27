@@ -6,4 +6,9 @@ const mainTextState = atom<string>({
   default: "",
 });
 
-export { mainTextState };
+const shadowDomState = atom<HTMLDivElement | null>({
+  key: "shadowDomState",
+  default: null,
+});
+
+export { mainTextState, shadowDomState };

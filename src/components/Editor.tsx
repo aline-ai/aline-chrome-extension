@@ -1,11 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import { useRecoilState, useRecoilValue } from "recoil";
 
 import { useEditor } from "@tiptap/react";
 import { EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { currentNoteIndexState, currentNoteState } from "../utils/Notes";
-import { mainTextState } from "../utils/states";
+import { mainTextState, shadowDomState } from "../utils/states";
 import Autocomplete from "./Autocomplete";
 
 // TODO:
@@ -19,12 +19,22 @@ import Autocomplete from "./Autocomplete";
 // - exports
 
 export default () => {
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const currentNoteIndex = useRecoilValue(currentNoteIndexState);
   const [currentNote, setCurrentNote] = useRecoilState(currentNoteState);
   const mainText = useRecoilValue(mainTextState);
+  const shadowDom = useRecoilValue(shadowDomState);
   const editor = useEditor(
     {
-      extensions: [StarterKit, Autocomplete.configure({ context: mainText })],
+      extensions: [
+        StarterKit,
+        Autocomplete.configure({
+          context: mainText,
+          shadowDom,
+          isLoading,
+          setIsLoading,
+        }),
+      ],
       autofocus: "end",
       content: currentNote === null ? "" : currentNote.content,
       onUpdate: ({ editor }) => {
