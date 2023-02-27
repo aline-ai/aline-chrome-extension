@@ -61,7 +61,7 @@ const treeFilter = (
 ): JSONContent => {
   return {
     ...json,
-    content: json.content?.map((json) => treeFilter(json, f)).filter(f),
+    content: json.content?.filter(f).map((json) => treeFilter(json, f)),
   };
 };
 
@@ -298,14 +298,11 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
               }
               return null;
             };
-            console.log(from, to);
             from =
               getContainingAscendant(from) || alineMainText.firstElementChild;
             to = getContainingAscendant(to) || alineMainText.lastElementChild;
-            console.log(from, to);
 
             if (from && to) {
-              console.log("Using viewport");
               // maybe check if this is the right parent
               const elements: Element[] = [];
               let current: Element | null = from;
@@ -339,14 +336,22 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
       this.storage.didSuggestAutocomplete = false;
       this.storage.serviceScriptPort.postMessage({ message: "abort" });
       this.editor.storage.didCauseUpdate = true;
+      const isMarkedAutocomplete = (entity: JSONContent): boolean => {
+        if (
+          entity.marks != undefined &&
+          entity.marks.findIndex((mark) => mark.type == "autocomplete") != -1
+        )
+          return true;
+        return (
+          (entity.type == "paragraph" &&
+            entity.content?.some(isMarkedAutocomplete)) ||
+          false
+        );
+      };
       this.editor.commands.setContent(
         treeFilter(
           this.editor.getJSON(),
-          (entity) =>
-            (!entity.marks ||
-              !entity.marks.find((mark) => mark.type == "autocomplete")) &&
-            entity.text != "" &&
-            entity.content?.length != 0
+          (entity) => !isMarkedAutocomplete(entity)
         )
       );
       this.editor.storage.didCauseUpdate = false;
