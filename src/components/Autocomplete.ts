@@ -1,8 +1,6 @@
 import { JSONContent, Mark, mergeAttributes } from "@tiptap/react";
 import { cursorIndicator, getRangeOfMark, unescapeHTML } from "../utils/utils";
 import { Editor } from "@tiptap/core";
-import { DOMElement } from "react";
-import { Plugin, PluginKey } from "@tiptap/pm/state";
 
 interface AutocompleteOptions {
   HTMLAttributes: Record<string, any>;
@@ -17,7 +15,7 @@ interface AutocompleteStorage {
   userDidUpdate: boolean;
   timer: NodeJS.Timeout | null;
   serviceScriptPort: chrome.runtime.Port;
-  didSuggestAutocomplete: boolean;
+  // didSuggestAutocomplete: boolean;
   oldContent: JSONContent;
 }
 
@@ -67,6 +65,28 @@ const treeFilter = (
   };
 };
 
+const treeFind = (
+  json: JSONContent,
+  f: (json: JSONContent) => boolean
+): JSONContent | null => {
+  if (f(json)) return json;
+  if (json.content) {
+    for (let i = 0; i < json.content?.length; i++) {
+      const res = treeFind(json.content[i], f);
+      if (res) return res;
+    }
+  }
+  return null;
+};
+
+const didSuggestAutocomplete = (json: JSONContent): boolean => {
+  return (
+    treeFind(json, (json) =>
+      Boolean(json.marks?.some((mark) => mark.type == "autocomplete"))
+    ) != null
+  );
+};
+
 export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
   name: "autocomplete",
   selectable: false,
@@ -87,7 +107,7 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
       userDidUpdate: true,
       timer: null,
       serviceScriptPort: chrome.runtime.connect({ name: "autocomplete" }),
-      didSuggestAutocomplete: false,
+      // didSuggestAutocomplete: false,
       oldContent: {
         type: "content",
         content: [{ type: "paragraph", content: [{ type: "text", text: "" }] }],
@@ -99,7 +119,6 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
     this.storage.serviceScriptPort.onMessage.addListener(
       ({ suggestion }: { suggestion: string }) => {
         // TODO: deal with anchor types
-        this.storage.didSuggestAutocomplete = true;
         this.options.setIsLoading(false);
         this.storage.oldContent = this.editor.getJSON();
         var contentWithCursor = getContentWithCursor(
@@ -230,8 +249,8 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
   addKeyboardShortcuts() {
     return {
       Tab: () => {
-        if (this.storage.didSuggestAutocomplete) {
-          this.storage.didSuggestAutocomplete = false;
+        if (didSuggestAutocomplete(this.editor.getJSON())) {
+          // this.storage.didSuggestAutocomplete = false;
           var [_first, last] = getRangeOfMark(
             this.editor.getJSON(),
             "autocomplete"
@@ -344,8 +363,10 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
   },
   onSelectionUpdate() {
     // console.log("fired on selection");
-    if (!this.storage.didCauseUpdate && this.storage.didSuggestAutocomplete) {
-      this.storage.didSuggestAutocomplete = false;
+    if (
+      !this.storage.didCauseUpdate &&
+      didSuggestAutocomplete(this.editor.getJSON())
+    ) {
       this.options.setIsLoading(false);
       this.storage.serviceScriptPort.postMessage({ message: "abort" });
 

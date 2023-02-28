@@ -4,7 +4,7 @@ import { useRecoilState, useRecoilValue } from "recoil";
 import { useEditor } from "@tiptap/react";
 import { EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { currentNoteIndexState, currentNoteState } from "../utils/Notes";
+import { currentNoteIndexState, currentNoteState } from "../utils/states";
 import { mainTextState, shadowDomState } from "../utils/states";
 import Autocomplete from "./Autocomplete";
 
@@ -48,5 +48,6 @@ export default ({
     },
     [currentNoteIndex, mainText]
   );
+  // chrome.runtime.onMessage()
   return <EditorContent editor={editor} />;
 };

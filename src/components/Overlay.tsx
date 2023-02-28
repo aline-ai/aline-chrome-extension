@@ -14,7 +14,7 @@ import { useRecoilState } from "recoil";
 
 const defaultBoxShadow = "0 5px 10px grey";
 export default ({ overlayOn }: { overlayOn: boolean }) => {
-  const [boxShadow, setBoxShadow] = useState<string>("none");
+  const [boxShadow, setBoxShadow] = useState<string>("none"); // make overlay invisible using this
   const [mainText, setMainText] = useRecoilState(mainTextState);
   useEffect(() => {
     if (overlayOn) {
@@ -83,9 +83,9 @@ export default ({ overlayOn }: { overlayOn: boolean }) => {
               <Skeleton height="20px" width="200px" />
               {[5, 9, 7, 2, 3].map((i, index) => (
                 <>
-                  <br key={index} />
+                  <br key={2 * index} />
                   <SkeletonText
-                    key={index}
+                    key={2 * index + 1}
                     noOfLines={i}
                     spacing="4"
                     skeletonHeight="2"
