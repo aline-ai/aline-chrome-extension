@@ -12,6 +12,7 @@ const shadowDomState = atom<HTMLDivElement | null>({
   default: null,
 });
 
+// Perhaps make this load at a different time
 const notesPort = chrome.runtime.connect({ name: "notes" });
 
 const notesState = atom<Note[]>({
