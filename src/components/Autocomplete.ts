@@ -65,7 +65,7 @@ const didSuggestAutocomplete = (json: JSONContent): boolean => {
   );
 };
 
-const injectHTML = (tokens: string[], path: Path): void => {
+const processTokens = (tokens: string[], path: Path): void => {
   const tagToType: { [id: string]: string } = {
     h1: "heading",
     h2: "heading",
@@ -166,10 +166,7 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
         // TODO: deal with anchor types
         this.options.setIsLoading(false);
         this.storage.oldContent = this.editor.getJSON();
-        var contentWithCursor = getContentWithCursor(
-          this,
-          "json"
-        ) as JSONContent;
+        var content = getContentWithCursor(this, "json") as JSONContent;
 
         // initializing the path so that it finds the node with the cursorIndicator
         let path: Path = [];
@@ -192,14 +189,14 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
           }
           return null;
         };
-        path = traverse(contentWithCursor)!;
+        path = traverse(content)!;
 
         const tokens = suggestion
           .split(/(<\/?[a-z0-9]+>)/)
           .filter((e) => e.trim() != "");
         console.log(tokens);
-        injectHTML(tokens, path);
-        contentWithCursor = treeFilter(contentWithCursor, (e) => e.text !== "");
+        processTokens(tokens, path);
+        content = treeFilter(content, (e) => e.text !== "");
 
         // Apply the autocomplete mark to all elements of the json
         // console.log("Autocomplete.ts: made suggestion");
@@ -207,7 +204,7 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
         const selection = this.editor.state.selection;
         this.editor
           .chain()
-          .setContent(contentWithCursor)
+          .setContent(content)
           .setTextSelection(selection)
           .run();
         this.storage.didCauseUpdate = false;
