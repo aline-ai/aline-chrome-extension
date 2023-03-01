@@ -60,7 +60,6 @@ export default ({
       autofocus: "end",
       content: currentNote === null ? "" : currentNote.content,
       onUpdate: ({ editor }) => {
-        // console.log("Called onupdate, sending", editor.getHTML());
         if (!editor.storage.apiUpdate.apiDidCauseUpdate) {
           setCurrentNote({
             ...currentNote!,

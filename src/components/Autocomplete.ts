@@ -24,7 +24,6 @@ interface AutocompleteStorage {
   userDidUpdate: boolean;
   timer: NodeJS.Timeout | null;
   serviceScriptPort: chrome.runtime.Port;
-  // didSuggestAutocomplete: boolean;
   oldContent: JSONContent;
   abort: () => void;
 }
@@ -95,6 +94,63 @@ const didSuggestAutocomplete = (json: JSONContent): boolean => {
       Boolean(json.marks?.some((mark) => mark.type == "autocomplete"))
     ) != null
   );
+};
+
+const injectHTML = (tokens: string[], path: Path): void => {
+  const tagToType: { [id: string]: string } = {
+    h1: "heading",
+    h2: "heading",
+    h3: "heading",
+    ul: "bulletList",
+    ol: "orderedList",
+    li: "listItem",
+    p: "paragraph",
+  };
+  tokens.forEach((token) => {
+    // Deal with links
+    token = token.replace("\n", "");
+    if (token.startsWith("<")) {
+      const tag = token.slice(1, token.length - 1);
+      if (tag.startsWith("/")) {
+        // close tag
+        const tag = token.slice(2, token.length - 1);
+        const _type = tagToType[tag];
+        if (_type == undefined) {
+          return;
+        }
+        const [index, node] = path.pop()!;
+        // assert node == tag
+      } else {
+        // open tag
+        const _type = tagToType[token.slice(1, token.length - 1)];
+        if (_type == undefined) {
+          return;
+        }
+        const [index, node] = path[path.length - 1];
+        const newObject: JSONContent = {
+          type: _type,
+          marks: [{ type: "autocomplete" }],
+          content: [],
+        };
+        if (_type == "heading") {
+          newObject.attrs = { level: 2 };
+        }
+        node.content!.splice(index + 1, 0, newObject);
+        path[path.length - 1][0] = index + 1;
+        path.push([-1, node.content![index + 1]]);
+      }
+    } else {
+      // text
+      const [index, node] = path[path.length - 1];
+      // assert node.text != null
+      node.content!.splice(index, 0, {
+        type: "text",
+        marks: [{ type: "autocomplete" }],
+        text: unescapeHTML(token),
+      });
+      path[path.length - 1][0] = index + 1;
+    }
+  });
 };
 
 export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
@@ -173,65 +229,11 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
           .split(/(<\/?[a-z0-9]+>)/)
           .filter((e) => e.trim() != "");
         console.log(tokens);
-        const tagToType: { [id: string]: string } = {
-          h1: "heading",
-          h2: "heading",
-          h3: "heading",
-          ul: "bulletList",
-          ol: "orderedList",
-          li: "listItem",
-          p: "paragraph",
-        };
-        // if thi
-        tokens.forEach((token) => {
-          // Deal with links
-          token = token.replace("\n", "");
-          if (token.startsWith("<")) {
-            const tag = token.slice(1, token.length - 1);
-            if (tag.startsWith("/")) {
-              // close tag
-              const tag = token.slice(2, token.length - 1);
-              const _type = tagToType[tag];
-              if (_type == undefined) {
-                return;
-              }
-              const [index, node] = path.pop()!;
-              // assert node == tag
-            } else {
-              // open tag
-              const _type = tagToType[token.slice(1, token.length - 1)];
-              if (_type == undefined) {
-                return;
-              }
-              const [index, node] = path[path.length - 1];
-              const newObject: JSONContent = {
-                type: _type,
-                marks: [{ type: "autocomplete" }],
-                content: [],
-              };
-              if (_type == "heading") {
-                newObject.attrs = { level: 2 };
-              }
-              node.content!.splice(index + 1, 0, newObject);
-              path[path.length - 1][0] = index + 1;
-              path.push([-1, node.content![index + 1]]);
-            }
-          } else {
-            // text
-            const [index, node] = path[path.length - 1];
-            // assert node.text != null
-            node.content!.splice(index, 0, {
-              type: "text",
-              marks: [{ type: "autocomplete" }],
-              text: unescapeHTML(token),
-            });
-            path[path.length - 1][0] = index + 1;
-          }
-        });
+        injectHTML(tokens, path);
         contentWithCursor = treeFilter(contentWithCursor, (e) => e.text !== "");
 
         // Apply the autocomplete mark to all elements of the json
-        console.log("Autocomplete.ts: made suggestion");
+        // console.log("Autocomplete.ts: made suggestion");
         this.storage.didCauseUpdate = true;
         const selection = this.editor.state.selection;
         this.editor
@@ -309,7 +311,7 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
     if (!this.storage.didCauseUpdate) {
       this.storage.abort();
       this.storage.timer = setTimeout(() => {
-        console.log("Autocomplete.ts: on update", document.hidden);
+        // console.log("Autocomplete.ts: on update", document.hidden);
         if (document.hidden) {
           return;
         }
@@ -390,7 +392,6 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
     }
   },
   onSelectionUpdate() {
-    // console.log("fired on selection");
     if (!this.storage.didCauseUpdate) {
       this.storage.abort();
 
