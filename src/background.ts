@@ -1,4 +1,6 @@
-import { Note, defaultNotes } from "./utils/Notes";
+import { defaultNotes } from "./utils/Notes";
+
+// Deal with API cleanup
 
 const fetchDefaultOptions = {
   method: "POST",
@@ -25,9 +27,6 @@ const sevenDays = 7 * 24 * 60 * 60 * 1000;
 
 // chrome.storage.local.clear();
 
-// chrome.storage.local
-//   .get("https://climate.nasa.gov/global-warming-vs-climate-change/")
-//   .then(console.log);
 chrome.storage.local.get("notes").then((result) => {
   // initializing notes
   if (!result.notes) {
@@ -45,9 +44,9 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
         result.simplifyCache[body.url] &&
         Date.now() - result.simplifyCache[body.url].date < sevenDays
       ) {
-        console.log("Sending cached data");
+        console.log("simplify: Sending cached data");
         console.log(
-          "Replying to cached simplify",
+          "simplify: Replying to cached simplify",
           result.simplifyCache[body.url]
         );
         sendResponse({ text: result.simplifyCache[body.url].mainText });
@@ -70,12 +69,12 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
           date: Date.now(),
         };
         chrome.storage.local.set({ simplifyCache }).then(() => {
-          console.log("Saved to cache");
+          console.log("simplify: Saved to cache");
         });
       }
     }
     if (request.message === "fetch") {
-      console.log("Sending data: ", request.url, {
+      console.log("fetch: Sending data: ", request.url, {
         ...fetchDefaultOptions,
         ...request.options,
       });
@@ -90,6 +89,8 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
   })();
   return true;
 });
+
+const notesPorts: chrome.runtime.Port[] = []; // deal with disconnect
 
 var controller = new AbortController();
 chrome.runtime.onConnect.addListener((port) => {
@@ -106,7 +107,7 @@ chrome.runtime.onConnect.addListener((port) => {
           options: any | null;
         }) => {
           if (message === "fetch") {
-            console.log(`Sending data: ${autocompleteUrl}`, options);
+            console.log(`fetch: Sending data: ${autocompleteUrl}`, options);
             try {
               const response = await fetch(autocompleteUrl, {
                 ...fetchDefaultOptions,
@@ -117,9 +118,9 @@ chrome.runtime.onConnect.addListener((port) => {
               console.log(data);
               port.postMessage(data);
             } catch (error) {
-              console.error("Error on fetching request: ", error);
+              console.error("fetch: Error on fetching request: ", error);
             }
-          } else if (message === "abort") {
+          } else if (message === "fetch: abort") {
             controller.abort();
             controller = new AbortController();
           }
@@ -127,21 +128,26 @@ chrome.runtime.onConnect.addListener((port) => {
       );
       break;
     case "notes":
+      notesPorts.push(port);
       port.onMessage.addListener(async (request) => {
-        if (request.message === "update") {
+        if (request.message === "updateNotes") {
           const notes = request.notes;
-          console.log("Received", notes);
-          chrome.storage.local.set({ notes });
-          console.log("Saved");
-          const tabs = await chrome.tabs.query({});
-          tabs.forEach((tab) => {
-            if (tab.id) chrome.tabs.sendMessage(tab.id, { notes });
+          console.log("notes: Received", notes);
+          chrome.storage.local.set({ notes }); // await this?
+          console.log("notes: Saved");
+          console.log("notes: Ports", notesPorts);
+          notesPorts.forEach((otherPort) => {
+            if (otherPort !== port)
+              otherPort.postMessage({ message: "updateNotes", notes });
           });
         } else if (request.message === "fetch") {
           const { notes } = await chrome.storage.local.get("notes");
-          console.log("Sending", notes);
-          port.postMessage({ notes });
+          console.log("notes: Sending", notes);
+          port.postMessage({ message: "fetch", notes });
         }
+      });
+      port.onDisconnect.addListener(() => {
+        notesPorts.splice(notesPorts.indexOf(port), 1);
       });
       break;
   }

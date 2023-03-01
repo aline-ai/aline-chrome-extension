@@ -15,25 +15,25 @@ const shadowDomState = atom<HTMLDivElement | null>({
 const notesPort = chrome.runtime.connect({ name: "notes" });
 
 const notesState = atom<Note[]>({
+  // give background script the tab id
   key: "notes",
-  // default: [NewNote("Getting Started", noteDefault)],
   default: [],
   effects: [
     ({ setSelf, onSet, trigger }) => {
       if (trigger === "get") {
         notesPort.postMessage({ message: "fetch" });
       }
-      chrome.runtime.onMessage.addListener(({ notes }) => {
-        console.log("Received on chrome.runtime");
-        setSelf(notes);
-      });
+      // chrome.runtime.onMessage.addListener(({ message, notes }) => {
+      //   console.log("notes: Received on chrome.runtime");
+      //   console.log(notes[0].content);
+      //   if (message === "updateNotes") setSelf(notes);
+      // });
       onSet((notes) => {
-        console.log("Sending ");
-        notesPort.postMessage({ message: "update", notes });
+        console.log("notes: Sending ", notes[0].content);
+        notesPort.postMessage({ message: "updateNotes", notes });
       });
-      notesPort.onMessage.addListener(({ notes }) => {
-        console.log("Received on notesPort");
-        setSelf(notes);
+      notesPort.onMessage.addListener(({ message, notes }) => {
+        if (message === "updateNotes" || message === "fetch") setSelf(notes);
       });
     },
   ],
