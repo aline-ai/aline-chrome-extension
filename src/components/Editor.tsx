@@ -1,10 +1,14 @@
-import React, { useState } from "react";
+import React from "react";
 import { useRecoilState, useRecoilValue } from "recoil";
 
-import { useEditor } from "@tiptap/react";
+import { Extension, useEditor } from "@tiptap/react";
 import { EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { currentNoteIndexState, currentNoteState } from "../utils/Notes";
+import {
+  currentNoteIndexState,
+  currentNoteState,
+  notesPort,
+} from "../utils/states";
 import { mainTextState, shadowDomState } from "../utils/states";
 import Autocomplete from "./Autocomplete";
 
@@ -17,6 +21,19 @@ import Autocomplete from "./Autocomplete";
 // - implement markdown
 // - implement latex
 // - exports
+
+interface APIUpdateOptions {}
+
+interface APIUpdateStorage {
+  apiDidCauseUpdate: boolean;
+}
+
+const APIUpdate = Extension.create<APIUpdateOptions, APIUpdateStorage>({
+  name: "apiUpdate",
+  addStorage() {
+    return { apiDidCauseUpdate: false };
+  },
+});
 
 export default ({
   setIsLoading,
@@ -35,18 +52,37 @@ export default ({
           context: mainText,
           shadowDom,
           setIsLoading,
+          currentNote: currentNote!,
+          setCurrentNote: setCurrentNote!,
         }),
+        APIUpdate,
       ],
       autofocus: "end",
       content: currentNote === null ? "" : currentNote.content,
       onUpdate: ({ editor }) => {
-        setCurrentNote({
-          ...currentNote!,
-          content: editor.getHTML(),
-        });
+        if (!editor.storage.apiUpdate.apiDidCauseUpdate) {
+          setCurrentNote({
+            ...currentNote!,
+            content: editor.getHTML(),
+          });
+        }
       },
     },
     [currentNoteIndex, mainText]
   );
+  notesPort.onMessage.addListener(({ message, notes }) => {
+    // chrome.runtime.onMessage.addListener(({ message, notes }) => {
+    // This should theoretically cause and infinite loop
+    // But somehow this is working as expected
+    if (
+      message === "updateNotes" &&
+      editor &&
+      notes.content !== notes[currentNoteIndex!].content
+    ) {
+      editor.storage.apiUpdate.apiDidCauseUpdate = true;
+      editor.commands.setContent(notes[currentNoteIndex!].content);
+      editor.storage.apiUpdate.apiDidCauseUpdate = false;
+    }
+  });
   return <EditorContent editor={editor} />;
 };

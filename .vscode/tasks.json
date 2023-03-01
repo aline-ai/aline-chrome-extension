@@ -9,7 +9,13 @@
         "kind": "build",
         "isDefault": true
       },
-      "problemMatcher": []
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "runOptions": {
+        "runOn": "folderOpen",
+      }
     },
     {
       "label": "Prettier Watch",
@@ -19,7 +25,13 @@
         "kind": "build",
         "isDefault": true
       },
-      "problemMatcher": []
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "runOptions": {
+        "runOn": "folderOpen",
+      }
     }
   ]
 }

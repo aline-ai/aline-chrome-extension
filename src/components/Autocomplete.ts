@@ -1,8 +1,13 @@
-import { JSONContent, Mark, mergeAttributes } from "@tiptap/react";
+import {
+  generateHTML,
+  JSONContent,
+  Mark,
+  mergeAttributes,
+} from "@tiptap/react";
 import { cursorIndicator, getRangeOfMark, unescapeHTML } from "../utils/utils";
 import { Editor } from "@tiptap/core";
-import { DOMElement } from "react";
-import { Plugin, PluginKey } from "@tiptap/pm/state";
+import { NewNote, Note } from "../utils/Notes";
+import StarterKit from "@tiptap/starter-kit";
 
 interface AutocompleteOptions {
   HTMLAttributes: Record<string, any>;
@@ -10,6 +15,8 @@ interface AutocompleteOptions {
   shadowDom: HTMLDivElement | null;
   isLoading: boolean;
   setIsLoading(isLoading: boolean): void;
+  currentNote: Note;
+  setCurrentNote: (note: Note) => void;
 }
 
 interface AutocompleteStorage {
@@ -17,8 +24,8 @@ interface AutocompleteStorage {
   userDidUpdate: boolean;
   timer: NodeJS.Timeout | null;
   serviceScriptPort: chrome.runtime.Port;
-  didSuggestAutocomplete: boolean;
   oldContent: JSONContent;
+  abort: () => void;
 }
 
 declare module "@tiptap/core" {
@@ -67,6 +74,85 @@ const treeFilter = (
   };
 };
 
+const treeFind = (
+  json: JSONContent,
+  f: (json: JSONContent) => boolean
+): JSONContent | null => {
+  if (f(json)) return json;
+  if (json.content) {
+    for (let i = 0; i < json.content?.length; i++) {
+      const res = treeFind(json.content[i], f);
+      if (res) return res;
+    }
+  }
+  return null;
+};
+
+const didSuggestAutocomplete = (json: JSONContent): boolean => {
+  return (
+    treeFind(json, (json) =>
+      Boolean(json.marks?.some((mark) => mark.type == "autocomplete"))
+    ) != null
+  );
+};
+
+const injectHTML = (tokens: string[], path: Path): void => {
+  const tagToType: { [id: string]: string } = {
+    h1: "heading",
+    h2: "heading",
+    h3: "heading",
+    ul: "bulletList",
+    ol: "orderedList",
+    li: "listItem",
+    p: "paragraph",
+  };
+  tokens.forEach((token) => {
+    // Deal with links
+    token = token.replace("\n", "");
+    if (token.startsWith("<")) {
+      const tag = token.slice(1, token.length - 1);
+      if (tag.startsWith("/")) {
+        // close tag
+        const tag = token.slice(2, token.length - 1);
+        const _type = tagToType[tag];
+        if (_type == undefined) {
+          return;
+        }
+        const [index, node] = path.pop()!;
+        // assert node == tag
+      } else {
+        // open tag
+        const _type = tagToType[token.slice(1, token.length - 1)];
+        if (_type == undefined) {
+          return;
+        }
+        const [index, node] = path[path.length - 1];
+        const newObject: JSONContent = {
+          type: _type,
+          marks: [{ type: "autocomplete" }],
+          content: [],
+        };
+        if (_type == "heading") {
+          newObject.attrs = { level: 2 };
+        }
+        node.content!.splice(index + 1, 0, newObject);
+        path[path.length - 1][0] = index + 1;
+        path.push([-1, node.content![index + 1]]);
+      }
+    } else {
+      // text
+      const [index, node] = path[path.length - 1];
+      // assert node.text != null
+      node.content!.splice(index, 0, {
+        type: "text",
+        marks: [{ type: "autocomplete" }],
+        text: unescapeHTML(token),
+      });
+      path[path.length - 1][0] = index + 1;
+    }
+  });
+};
+
 export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
   name: "autocomplete",
   selectable: false,
@@ -79,6 +165,8 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
       shadowDom: null,
       isLoading: false,
       setIsLoading: (_isLoading: boolean) => {},
+      currentNote: NewNote(),
+      setCurrentNote: (_note: Note) => {},
     };
   },
   addStorage() {
@@ -87,19 +175,26 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
       userDidUpdate: true,
       timer: null,
       serviceScriptPort: chrome.runtime.connect({ name: "autocomplete" }),
-      didSuggestAutocomplete: false,
       oldContent: {
         type: "content",
         content: [{ type: "paragraph", content: [{ type: "text", text: "" }] }],
       },
+      abort: () => {},
     };
   },
   onCreate() {
     this.storage.oldContent = this.editor.getJSON();
+    this.storage.abort = () => {
+      if (this.storage.timer) {
+        clearTimeout(this.storage.timer);
+      }
+      this.storage.timer = null;
+      this.storage.serviceScriptPort.postMessage({ abort: true });
+      this.options.setIsLoading(false);
+    };
     this.storage.serviceScriptPort.onMessage.addListener(
       ({ suggestion }: { suggestion: string }) => {
         // TODO: deal with anchor types
-        this.storage.didSuggestAutocomplete = true;
         this.options.setIsLoading(false);
         this.storage.oldContent = this.editor.getJSON();
         var contentWithCursor = getContentWithCursor(
@@ -134,64 +229,11 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
           .split(/(<\/?[a-z0-9]+>)/)
           .filter((e) => e.trim() != "");
         console.log(tokens);
-        const tagToType: { [id: string]: string } = {
-          h1: "heading",
-          h2: "heading",
-          h3: "heading",
-          ul: "bulletList",
-          ol: "orderedList",
-          li: "listItem",
-          p: "paragraph",
-        };
-        // if thi
-        tokens.forEach((token) => {
-          // Deal with links
-          token = token.replace("\n", "");
-          if (token.startsWith("<")) {
-            const tag = token.slice(1, token.length - 1);
-            if (tag.startsWith("/")) {
-              // close tag
-              const tag = token.slice(2, token.length - 1);
-              const _type = tagToType[tag];
-              if (_type == undefined) {
-                return;
-              }
-              const [index, node] = path.pop()!;
-              // assert node == tag
-            } else {
-              // open tag
-              const _type = tagToType[token.slice(1, token.length - 1)];
-              if (_type == undefined) {
-                return;
-              }
-              const [index, node] = path[path.length - 1];
-              const newObject: JSONContent = {
-                type: _type,
-                marks: [{ type: "autocomplete" }],
-                content: [],
-              };
-              if (_type == "heading") {
-                newObject.attrs = { level: 2 };
-              }
-              node.content!.splice(index + 1, 0, newObject);
-              path[path.length - 1][0] = index + 1;
-              path.push([-1, node.content![index + 1]]);
-            }
-          } else {
-            // text
-            const [index, node] = path[path.length - 1];
-            // assert node.text != null
-            node.content!.splice(index, 0, {
-              type: "text",
-              marks: [{ type: "autocomplete" }],
-              text: unescapeHTML(token),
-            });
-            path[path.length - 1][0] = index + 1;
-          }
-        });
+        injectHTML(tokens, path);
         contentWithCursor = treeFilter(contentWithCursor, (e) => e.text !== "");
 
         // Apply the autocomplete mark to all elements of the json
+        // console.log("Autocomplete.ts: made suggestion");
         this.storage.didCauseUpdate = true;
         const selection = this.editor.state.selection;
         this.editor
@@ -230,8 +272,7 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
   addKeyboardShortcuts() {
     return {
       Tab: () => {
-        if (this.storage.didSuggestAutocomplete) {
-          this.storage.didSuggestAutocomplete = false;
+        if (didSuggestAutocomplete(this.editor.getJSON())) {
           var [_first, last] = getRangeOfMark(
             this.editor.getJSON(),
             "autocomplete"
@@ -239,12 +280,20 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
 
           const content = this.editor.getJSON();
           // remove the autocomplete mark from the content
+
+          // can use treeMap
           const removeAutocomplete = (json: JSONContent) => {
             json.marks = json.marks?.filter((e) => e.type != "autocomplete");
             json.content = json.content?.map(removeAutocomplete);
             return json;
           };
           removeAutocomplete(content);
+
+          // Be careful of infinite loop
+          this.options.setCurrentNote({
+            ...this.options.currentNote,
+            content: generateHTML(content, [StarterKit]),
+          });
 
           return this.editor
             .chain()
@@ -260,12 +309,12 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
   onUpdate() {
     // console.log("fired on update");
     if (!this.storage.didCauseUpdate) {
-      this.options.setIsLoading(false);
-      if (this.storage.timer != null) {
-        clearTimeout(this.storage.timer);
-      }
-      this.storage.serviceScriptPort.postMessage({ message: "abort" });
+      this.storage.abort();
       this.storage.timer = setTimeout(() => {
+        // console.log("Autocomplete.ts: on update", document.hidden);
+        if (document.hidden) {
+          return;
+        }
         const selection = this.editor.state.selection;
         this.storage.timer = null;
         if (selection.anchor == selection.head) {
@@ -343,15 +392,14 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
     }
   },
   onSelectionUpdate() {
-    // console.log("fired on selection");
-    if (!this.storage.didCauseUpdate && this.storage.didSuggestAutocomplete) {
-      this.storage.didSuggestAutocomplete = false;
-      this.options.setIsLoading(false);
-      this.storage.serviceScriptPort.postMessage({ message: "abort" });
+    if (!this.storage.didCauseUpdate) {
+      this.storage.abort();
 
-      this.editor.storage.didCauseUpdate = true;
-      this.editor.commands.setContent(this.storage.oldContent);
-      this.editor.storage.didCauseUpdate = false;
+      if (didSuggestAutocomplete(this.editor.getJSON())) {
+        this.editor.storage.didCauseUpdate = true;
+        this.editor.commands.setContent(this.storage.oldContent);
+        this.editor.storage.didCauseUpdate = false;
+      }
     }
   },
 });

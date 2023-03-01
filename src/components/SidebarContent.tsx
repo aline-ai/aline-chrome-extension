@@ -16,13 +16,12 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import { useRecoilState, useRecoilValue } from "recoil";
+import { Note, NewNote } from "../utils/Notes";
 import {
-  Note,
   currentNoteIndexState,
   notesState,
   currentNoteState,
-  NewNote,
-} from "../utils/Notes";
+} from "../utils/states";
 import Item from "./Item";
 import { getRandom, newNoteAdjectives, scrollbarCSS } from "../utils/constants";
 
@@ -110,7 +109,8 @@ const NoteListItem = ({
           {...IconButtonStyle}
           onClick={(e) => {
             e.stopPropagation();
-            setNotes([...notes.slice(0, index), ...notes.slice(index + 1)]);
+            if (notes.length > 1)
+              setNotes([...notes.slice(0, index), ...notes.slice(index + 1)]);
           }}
         />
       </HStack>
@@ -164,10 +164,7 @@ export default () => {
       adjective = getRandom(newNoteAdjectives);
     if (notes.some((note) => note.title === `Your ${adjective} new note`))
       adjective = getRandom(newNoteAdjectives);
-    setNotes([
-      ...notes,
-      NewNote(`Your ${adjective} new note`, "Your new note"),
-    ]);
+    setNotes([...notes, NewNote(`Your ${adjective} new note`)]);
   };
 
   return (

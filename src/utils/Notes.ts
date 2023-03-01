@@ -1,5 +1,7 @@
-import { atom, selector } from "recoil";
+import { generateJSON, HTMLContent, JSONContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
 import { v4 as uuidv4 } from "uuid";
+import Autocomplete from "../components/Autocomplete";
 
 const noteDefault = `
   <h2>Welcome to Aline!</h2>
@@ -10,10 +12,21 @@ const noteDefault = `
   </p>
   `;
 
+const defaultNotes = [
+  // fix later
+  {
+    title: "Getting Started",
+    content: noteDefault,
+  },
+];
+
+// const noteDefaultContent = { type: "doc", content: [{ type: "paragraph" }] };
+
 interface Note {
   id: string;
   title: string;
-  content: string;
+  // content: JSONContent;
+  content: HTMLContent;
   createdAt: number;
   updatedAt: number;
 }
@@ -21,7 +34,7 @@ interface Note {
 const NewNote = (
   title: string = "",
   // content: DeltaType = new Delta(),
-  content: any = "",
+  content: HTMLContent = noteDefault,
   id: string = ""
 ): Note => {
   return {
@@ -33,31 +46,14 @@ const NewNote = (
   };
 };
 
-const notesState = atom<Note[]>({
-  key: "notes",
-  default: [NewNote("Getting Started", noteDefault)],
-});
+// update browser
 
-const currentNoteIndexState = atom<number | null>({
-  key: "currentNoteIndex",
-  default: null,
-});
-
-const currentNoteState = selector({
-  key: "currentNote",
-  get: ({ get }) => {
-    const notes = get(notesState);
-    const currentNoteIndex = get(currentNoteIndexState);
-    return currentNoteIndex === null ? null : notes[currentNoteIndex];
-  },
-  set: ({ set, get }, updatedNote) => {
-    const notes = get(notesState);
-    const currentNoteIndex = get(currentNoteIndexState);
-    if (currentNoteIndex === null) return;
-    const newNotes = [...notes];
-    newNotes[currentNoteIndex!] = updatedNote as Note;
-    set(notesState, newNotes);
-  },
-});
-
-export { Note, notesState, currentNoteIndexState, NewNote, currentNoteState };
+export {
+  defaultNotes,
+  Note,
+  // notesPort,
+  // notesState,
+  // currentNoteIndexState,
+  NewNote,
+  // currentNoteState,
+};

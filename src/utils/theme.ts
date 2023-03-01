@@ -1,5 +1,4 @@
 import { extendTheme, type ThemeConfig } from "@chakra-ui/react";
-import { NoEmitOnErrorsPlugin } from "webpack";
 
 const config: ThemeConfig = {
   initialColorMode: "system",
