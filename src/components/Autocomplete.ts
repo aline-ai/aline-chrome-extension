@@ -8,6 +8,7 @@ import { cursorIndicator, getRangeOfMark, unescapeHTML } from "../utils/utils";
 import { Editor } from "@tiptap/core";
 import { NewNote, Note } from "../utils/Notes";
 import StarterKit from "@tiptap/starter-kit";
+import { treeFilter, treeFind, treeMap } from "../utils/tree_utils";
 
 interface AutocompleteOptions {
   HTMLAttributes: Record<string, any>;
@@ -54,38 +55,6 @@ const getContentWithCursor = (
   _this.editor.commands.undo();
   _this.storage.didCauseUpdate = false;
   return html;
-};
-
-const treeMap = (
-  json: JSONContent,
-  f: (json: JSONContent) => JSONContent
-): JSONContent => {
-  json.content = json.content?.map((json) => treeMap(json, f));
-  return f(json);
-};
-
-const treeFilter = (
-  json: JSONContent,
-  f: (json: JSONContent) => boolean
-): JSONContent => {
-  return {
-    ...json,
-    content: json.content?.filter(f).map((json) => treeFilter(json, f)),
-  };
-};
-
-const treeFind = (
-  json: JSONContent,
-  f: (json: JSONContent) => boolean
-): JSONContent | null => {
-  if (f(json)) return json;
-  if (json.content) {
-    for (let i = 0; i < json.content?.length; i++) {
-      const res = treeFind(json.content[i], f);
-      if (res) return res;
-    }
-  }
-  return null;
 };
 
 const didSuggestAutocomplete = (json: JSONContent): boolean => {
@@ -278,16 +247,11 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
             "autocomplete"
           );
 
-          const content = this.editor.getJSON();
-          // remove the autocomplete mark from the content
-
-          // can use treeMap
-          const removeAutocomplete = (json: JSONContent) => {
-            json.marks = json.marks?.filter((e) => e.type != "autocomplete");
-            json.content = json.content?.map(removeAutocomplete);
-            return json;
-          };
-          removeAutocomplete(content);
+          const content = treeMap(this.editor.getJSON(), (obj) => {
+            if (obj.marks)
+              obj.marks = obj.marks.filter((e) => e.type != "autocomplete");
+            return obj;
+          });
 
           // Be careful of infinite loop
           this.options.setCurrentNote({
