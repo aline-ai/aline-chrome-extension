@@ -23,13 +23,7 @@ const notesState = atom<Note[]>({
       if (trigger === "get") {
         notesPort.postMessage({ message: "fetch" });
       }
-      // chrome.runtime.onMessage.addListener(({ message, notes }) => {
-      //   console.log("notes: Received on chrome.runtime");
-      //   console.log(notes[0].content);
-      //   if (message === "updateNotes") setSelf(notes);
-      // });
       onSet((notes) => {
-        console.log("notes: Sending ", notes[0].content);
         notesPort.postMessage({ message: "updateNotes", notes });
       });
       notesPort.onMessage.addListener(({ message, notes }) => {
