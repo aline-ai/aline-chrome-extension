@@ -33,7 +33,6 @@ import { getRandom, newNoteAdjectives, scrollbarCSS } from "../utils/constants";
 
 import { css, Global } from "@emotion/react";
 import Editor from "./Editor";
-import { createQualifiedName } from "typescript";
 
 // Feature: maybe comments
 
