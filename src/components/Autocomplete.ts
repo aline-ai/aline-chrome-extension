@@ -26,6 +26,7 @@ interface AutocompleteStorage {
   timer: NodeJS.Timeout | null;
   serviceScriptPort: chrome.runtime.Port;
   oldContent: JSONContent;
+  isLoading: boolean;
   abort: () => void;
 }
 
@@ -148,6 +149,7 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
         type: "content",
         content: [{ type: "paragraph", content: [{ type: "text", text: "" }] }],
       },
+      isLoading: this.options.isLoading,
       abort: () => {},
     };
   },
@@ -160,54 +162,62 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
       this.storage.timer = null;
       this.storage.serviceScriptPort.postMessage({ abort: true });
       this.options.setIsLoading(false);
+      this.storage.isLoading = false;
     };
     this.storage.serviceScriptPort.onMessage.addListener(
       ({ suggestion }: { suggestion: string }) => {
-        // TODO: deal with anchor types
-        this.options.setIsLoading(false);
-        this.storage.oldContent = this.editor.getJSON();
-        var content = getContentWithCursor(this, "json") as JSONContent;
+        if (
+          this.storage.isLoading &&
+          !didSuggestAutocomplete(this.editor.getJSON())
+        ) {
+          // TODO: deal with anchor types
+          this.storage.abort();
+          this.options.setIsLoading(false);
+          this.storage.isLoading = false;
+          this.storage.oldContent = this.editor.getJSON();
+          var content = getContentWithCursor(this, "json") as JSONContent;
 
-        // initializing the path so that it finds the node with the cursorIndicator
-        let path: Path = [];
-        let indexOfCursor = -1;
-        const traverse = (json: JSONContent): Path | null => {
-          if (json.text) {
-            indexOfCursor = json.text.indexOf(cursorIndicator);
-            json.text = json.text.replace(cursorIndicator, "");
-            if (indexOfCursor != -1) {
-              return [];
-            }
-          }
-          if (json.content) {
-            for (let i = 0; i < json.content.length; i++) {
-              const result = traverse(json.content[i]);
-              if (result != null) {
-                return [[i, json], ...result]; // maybe use concat
+          // initializing the path so that it finds the node with the cursorIndicator
+          let path: Path = [];
+          let indexOfCursor = -1;
+          const traverse = (json: JSONContent): Path | null => {
+            if (json.text) {
+              indexOfCursor = json.text.indexOf(cursorIndicator);
+              json.text = json.text.replace(cursorIndicator, "");
+              if (indexOfCursor != -1) {
+                return [];
               }
             }
-          }
-          return null;
-        };
-        path = traverse(content)!;
+            if (json.content) {
+              for (let i = 0; i < json.content.length; i++) {
+                const result = traverse(json.content[i]);
+                if (result != null) {
+                  return [[i, json], ...result]; // maybe use concat
+                }
+              }
+            }
+            return null;
+          };
+          path = traverse(content)!;
 
-        const tokens = suggestion
-          .split(/(<\/?[a-z0-9]+>)/)
-          .filter((e) => e.trim() != "");
-        console.log(tokens);
-        processTokens(tokens, path);
-        content = treeFilter(content, (e) => e.text !== "");
+          const tokens = suggestion
+            .split(/(<\/?[a-z0-9]+>)/)
+            .filter((e) => e.trim() != "");
+          console.log(tokens);
+          processTokens(tokens, path);
+          content = treeFilter(content, (e) => e.text !== "");
 
-        // Apply the autocomplete mark to all elements of the json
-        // console.log("Autocomplete.ts: made suggestion");
-        this.storage.didCauseUpdate = true;
-        const selection = this.editor.state.selection;
-        this.editor
-          .chain()
-          .setContent(content)
-          .setTextSelection(selection)
-          .run();
-        this.storage.didCauseUpdate = false;
+          // Apply the autocomplete mark to all elements of the json
+          // console.log("Autocomplete.ts: made suggestion");
+          this.storage.didCauseUpdate = true;
+          const selection = this.editor.state.selection;
+          this.editor
+            .chain()
+            .setContent(content)
+            .setTextSelection(selection)
+            .run();
+          this.storage.didCauseUpdate = false;
+        }
       }
     );
   },
@@ -239,6 +249,7 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
     return {
       Tab: () => {
         if (didSuggestAutocomplete(this.editor.getJSON())) {
+          this.storage.abort();
           var [_first, last] = getRangeOfMark(
             this.editor.getJSON(),
             "autocomplete"
@@ -256,11 +267,14 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
             content: generateHTML(content, [StarterKit]),
           });
 
-          return this.editor
+          this.storage.didCauseUpdate = true;
+          const response = this.editor
             .chain()
             .setContent(content)
             .setTextSelection({ from: last, to: last })
             .run();
+          this.storage.didCauseUpdate = false;
+          return response;
         } else {
           return true;
         }
@@ -269,7 +283,10 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
   },
   onUpdate() {
     // console.log("fired on update");
-    if (!this.storage.didCauseUpdate) {
+    if (
+      !this.storage.didCauseUpdate &&
+      !didSuggestAutocomplete(this.editor.getJSON())
+    ) {
       this.storage.abort();
       this.storage.timer = setTimeout(() => {
         // console.log("Autocomplete.ts: on update", document.hidden);
@@ -338,6 +355,7 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
             }
           }
           this.options.setIsLoading(true);
+          this.storage.isLoading = true;
           this.storage.serviceScriptPort.postMessage({
             message: "fetch",
             options: {
