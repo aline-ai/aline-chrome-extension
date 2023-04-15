@@ -76,6 +76,20 @@ const processTokens = (tokens: string[], path: Path): void => {
     li: "listItem",
     p: "paragraph",
   };
+  if (!tokens[0].startsWith("<")) {
+    const lastElement = path[path.length - 1][1];
+    if (lastElement.content == undefined) {
+    } else {
+      // lastElement.content[0].text += tokens[0];
+      lastElement.content.push({
+        type: "text",
+        text: tokens[0],
+        marks: [{ type: "autocomplete" }],
+      });
+      tokens = tokens.slice(1);
+    }
+  }
+
   tokens.forEach((token) => {
     // Deal with links
     token = token.replace("\n", "");
@@ -203,7 +217,7 @@ export default Mark.create<AutocompleteOptions, AutocompleteStorage>({
           const tokens = suggestion
             .split(/(<\/?[a-z0-9]+>)/)
             .filter((e) => e.trim() != "");
-          console.log(tokens);
+          // console.log(tokens);
           processTokens(tokens, path);
           content = treeFilter(content, (e) => e.text !== "");
 

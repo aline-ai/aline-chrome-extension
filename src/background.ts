@@ -34,6 +34,8 @@ chrome.storage.local.get("notes").then((result) => {
   }
 });
 
+chrome.storage.local.set({ currentNote: null });
+
 chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
   (async () => {
     if (request.message === "simplify") {
@@ -96,8 +98,7 @@ var controller = new AbortController();
 chrome.runtime.onConnect.addListener((port) => {
   switch (port.name) {
     case "autocomplete":
-      const autocompleteUrl =
-        "https://aline-backend-zqvkdcubfa-uw.a.run.app/autocomplete";
+      const autocompleteUrl = "https://aline-ai--api.modal.run/autocomplete";
       port.onMessage.addListener(
         async ({
           message,
@@ -131,19 +132,30 @@ chrome.runtime.onConnect.addListener((port) => {
       notesPorts.push(port);
       port.onMessage.addListener(async (request) => {
         if (request.message === "updateNotes") {
-          const notes = request.notes;
+          const { notes, currentNote } = request;
           console.log("notes: Received", notes);
           chrome.storage.local.set({ notes }); // await this?
           console.log("notes: Saved");
           console.log("notes: Ports", notesPorts);
           notesPorts.forEach((otherPort) => {
             if (otherPort !== port)
-              otherPort.postMessage({ message: "updateNotes", notes });
+              otherPort.postMessage({
+                message: "updateNotes",
+                notes,
+                currentNote,
+              });
           });
         } else if (request.message === "fetch") {
-          const { notes } = await chrome.storage.local.get("notes");
+          const { notes, currentNote } = await chrome.storage.local.get([
+            "notes",
+            "currentNote",
+          ]);
           console.log("notes: Sending", notes);
-          port.postMessage({ message: "fetch", notes });
+          port.postMessage({ message: "fetch", notes, currentNote });
+        } else if (request.message === "setCurrentNote") {
+          const { note_id } = request;
+          console.log("notes: Setting current note", note_id);
+          chrome.storage.local.set({ currentNote: note_id });
         }
       });
       port.onDisconnect.addListener(() => {

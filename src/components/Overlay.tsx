@@ -29,7 +29,7 @@ export default ({ overlayOn }: { overlayOn: boolean }) => {
       var data: any | null = null;
       const message: any = {
         message: "simplify",
-        url: "https://aline-backend-zqvkdcubfa-uw.a.run.app/simplify",
+        url: "https://aline-ai--api.modal.run/simplify",
         options: {
           body: JSON.stringify({
             url: document.location.href,

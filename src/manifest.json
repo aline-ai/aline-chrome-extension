@@ -12,6 +12,6 @@
   "background": {
     "service_worker": "background.js"
   },
-  "permissions": ["storage"],
-  "host_permissions": ["https://aline-backend-zqvkdcubfa-uw.a.run.app/"]
+  "permissions": ["storage", "unlimitedStorage"],
+  "host_permissions": ["https://aline-ai--api.modal.run/"]
 }

@@ -236,6 +236,13 @@ export default () => {
         </VStack>
       ) : (
         <>
+          <Progress
+            height={isLoading ? 2 : 0}
+            width="full"
+            colorScheme="cyan"
+            transition="height 0.4s ease-in-out"
+            isIndeterminate
+          />
           <Container
             key={1}
             h="full"
@@ -246,13 +253,6 @@ export default () => {
             <Global styles={editorContainerStyles} />
             <Editor setIsLoading={setIsLoading} />
           </Container>
-          <Progress
-            height={isLoading ? 2 : 0}
-            width="full"
-            colorScheme="cyan"
-            transition="height 0.4s ease-in-out"
-            isIndeterminate
-          />
         </>
       )}
     </VStack>

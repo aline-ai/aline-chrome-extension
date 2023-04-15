@@ -25,7 +25,11 @@ const notesState = atom<Note[]>({
         notesPort.postMessage({ message: "fetch" });
       }
       onSet((notes) => {
-        notesPort.postMessage({ message: "updateNotes", notes });
+        notesPort.postMessage({
+          message: "updateNotes",
+          notes,
+          currentNote: null,
+        });
       });
       notesPort.onMessage.addListener(({ message, notes }) => {
         if (message === "updateNotes" || message === "fetch") setSelf(notes);
