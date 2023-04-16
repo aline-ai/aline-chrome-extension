@@ -6,6 +6,8 @@ Current features:
 * Passive auto-suggestions based on your writing
 
 TODO:
+* Anthropic
+* Active generation
 * Fix bugs surrounding editor
 * Track currently opened note
 * PDF Support
