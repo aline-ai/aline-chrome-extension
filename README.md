@@ -6,6 +6,7 @@ Current features:
 * Passive auto-suggestions based on your writing
 
 TODO:
+* Cleanup landing page
 * Anthropic
 * Active generation
 * Fix bugs surrounding editor
