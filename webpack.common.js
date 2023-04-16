@@ -6,10 +6,7 @@
 const path = require("path");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 
-// const ExtReloader  = require('webpack-ext-reloader');
-
 module.exports = {
-  watch: true,
   devtool: false,
   entry: {
     content: "./src/content.tsx",
@@ -50,16 +47,8 @@ module.exports = {
     ],
   },
   plugins: [
-    // new ExtReloader({
-    //   manifest: path.resolve(__dirname, "./src/manifest.json"),
-    //   entries: {
-    //     contentScript: 'content',
-    //     background: 'background'
-    //   }
-    // }),
     new CopyWebpackPlugin({
       patterns: [{ from: "./src/manifest.json" }],
     }),
   ],
-  watch: true,
 };
