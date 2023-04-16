@@ -13,7 +13,7 @@ module.exports = {
     background: "./src/background.ts",
   },
   output: {
-    path: path.resolve(__dirname, "extension"),
+    path: path.resolve(__dirname, "../extension"),
     filename: "[name].js",
   },
   resolve: {

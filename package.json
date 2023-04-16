@@ -41,9 +41,9 @@
     "zip-webpack-plugin": "^4.0.1"
   },
   "scripts": {
-    "start": "webpack --config=webpack.dev.js",
+    "start": "webpack --config=webpack/webpack.dev.js",
     "prettier-watch": "onchange \"**/*\" -- prettier --write --ignore-unknown {{changed}}",
-    "build": "webpack --config=webpack.prod.js"
+    "build": "webpack --config=webpack/webpack.prod.js"
   },
   "devDependencies": {
     "css-loader": "^6.7.3",
