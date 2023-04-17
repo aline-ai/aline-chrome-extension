@@ -6,16 +6,16 @@ Current features:
 * Passive auto-suggestions based on your writing
 
 TODO:
-- [] Cleanup landing page
+- [ ] Cleanup landing page
 - [x] Anthropic
-- [] Logging
-- [] Sentence BERT (replace ada)
-- [] Active generation (streaming)
-- [] Fix bugs surrounding editor
-- [] Track currently opened note
-- [] PDF Support
-- [] Citation tracking
-- [] User auth?
+- [x] Logging
+- [ ] Sentence BERT (replace ada)
+- [ ] Active generation (streaming)
+- [ ] Fix bugs surrounding editor
+- [ ] Track currently opened note
+- [ ] PDF Support
+- [ ] Citation tracking
+- [ ] User auth?
 
 Upcoming features:
 * PDF Support
