@@ -7,7 +7,7 @@ Current features:
 
 TODO:
 - [] Cleanup landing page
-- [] Anthropic
+- [x] Anthropic
 - [] Logging
 - [] Sentence BERT (replace ada)
 - [] Active generation (streaming)
