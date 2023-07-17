@@ -1,6 +1,8 @@
 # aline-chrome-extension
 A line alone should seperate you're notes and you're reading.
 
+![image](https://github.com/aline-ai/aline-chrome-extension/assets/26889185/1ba3320e-2fcf-4c37-b5ff-f2d25887f1f4)
+
 Current features:
 * Persistent notes in a sidebar
 * Passive auto-suggestions based on your writing
